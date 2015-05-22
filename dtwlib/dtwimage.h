@@ -20,14 +20,26 @@
 #ifndef DTWIMAGE_H
 #define DTWIMAGE_H
 
-//#include <QImage>
+#include <QObject>
+#include <QImage>
 
-class DtwImage
-        //: public QImage
+namespace dtw {
+
+class DtwImagePrivate;
+
+class DtwImage: public QObject
 {
-//    Q_OBJECT
+    Q_OBJECT
 public:
-    DtwImage();
-};
+    DtwImage(const QImage &);
+    ~DtwImage();
 
+    const QImage & getColoringPage(void) const;
+
+private:
+    DtwImagePrivate * d_ptr;
+    Q_DECLARE_PRIVATE(DtwImage);
+};//class DtwImage
+
+}//namespace dtw
 #endif // DTWIMAGE_H

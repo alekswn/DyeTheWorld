@@ -17,9 +17,24 @@
  *****************************************************************************/
 
 #include "dtwimage.h"
+#include "dtwimage_p.h"
 
+using namespace dtw;
 
-DtwImage::DtwImage()
-//    : QImage()
+DtwImage::DtwImage(const QImage& img) : d_ptr(new DtwImagePrivate(this))
 {
+    Q_D(DtwImage);
+    d->m_original = img;
+}
+
+
+DtwImage::~DtwImage()
+{
+    delete d_ptr;
+}
+
+const QImage & DtwImage::getColoringPage(void) const
+{
+    Q_D(const DtwImage);
+    return d->m_original;
 }

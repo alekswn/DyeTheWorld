@@ -23,7 +23,8 @@ TEMPLATE = lib
 
 SOURCES += dtwimage.cpp
 
-HEADERS += dtwimage.h
+HEADERS += dtwimage.h \
+    dtwimage_p.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

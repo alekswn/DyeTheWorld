@@ -21,6 +21,8 @@
 
 #include "dtwimage.h"
 
+using namespace dtw;
+
 class dtwImageTest : public QObject
 {
     Q_OBJECT
