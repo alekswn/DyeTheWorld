@@ -48,4 +48,12 @@ equals(TEMPLATE, "app") {
         QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/\''
         QMAKE_RPATH=
     }
+
+    DISTFILES +=
+
+    if (!CONFIG(console) || equals( TARGET, "tst_dtwimagetest" )) {
+        RESOURCES += \
+            ../../Data/common.qrc
+    }
+
 }
