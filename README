@@ -7,6 +7,6 @@ The program is based on QT5 and targeted to wide range of platforms.
 
 Build Instructions:
 
-1) Copy appropriate configuration file from "configs" dir to "config.pri".
+1) Edit "config.pri" file.
 2) Run "qmake && make && make install"
 
