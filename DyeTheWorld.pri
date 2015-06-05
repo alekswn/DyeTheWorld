@@ -56,4 +56,6 @@ equals(TEMPLATE, "app") {
             ../../Data/common.qrc
     }
 
+    DEFINES += APP_VERSION=\\\"$$VERSION\\\"
+
 }
