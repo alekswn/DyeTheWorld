@@ -39,6 +39,14 @@ MOC_DIR = $$DESTDIR/.moc
 RCC_DIR = $$DESTDIR/.qrc
 UI_DIR = $$DESTDIR/.ui
 
+DIRS_TO_CREATE =  \
+        $$DESTDIR \
+        $$OBJECTS_DIR \
+        $$MOC_DIR \
+        $$RCC_DIR \
+        $$UI_DIR \
+
+
 equals(TEMPLATE, "app") {
     LIBS += -L$$DESTDIR/ -ldtw
     INCLUDEPATH += $$shadowed(dtwlib)
