@@ -15,21 +15,21 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#greaterThan(QT_MAJOR_VERSION, 4): QT += printsupport
 
-VERSION = 0.0.1
+QT       += testlib
 
-TARGET = dtw
-TEMPLATE = lib
-#CONFIG += staticlib
+#QT       -= gui
 
-SOURCES += dtwimage.cpp
+TARGET = tst_dtwimagetest
+CONFIG   += console
+CONFIG   -= app_bundle
 
-HEADERS += dtwimage.h \
-    dtwimage_p.h
-unix {
-    target.path = /usr/lib
-    INSTALLS += target
-}
+TEMPLATE = app
 
-include(../DyeTheWorld.pri)
+
+SOURCES += tst_dtwimagetest.cpp
+DEFINES += SRCDIR=\\\"$$PWD/\\\"
+
+include(../../DyeTheWorld.pri)
+
+message(INCLUDEPATH: $$INCLUDEPATH)

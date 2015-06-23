@@ -16,18 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-QT       += testlib
+TEMPLATE = subdirs
+CONFIG += ordered
+SUBDIRS = DtwImageTest \
 
-#QT       -= gui
-
-TARGET = tst_dtwimagetest
-CONFIG   += console
-CONFIG   -= app_bundle
-
-TEMPLATE = app
-
-
-SOURCES += tst_dtwimagetest.cpp
-DEFINES += SRCDIR=\\\"$$PWD/\\\"
-
-include(../../DyeTheWorld.pri)

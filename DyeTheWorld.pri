@@ -49,8 +49,10 @@ DIRS_TO_CREATE =  \
 
 equals(TEMPLATE, "app") {
     LIBS += -L$$DESTDIR/ -ldtw
-    INCLUDEPATH += $$shadowed(dtwlib)
-    DEPENDPATH +=  $$shadowed(dtwlib)
+    INCLUDEPATH += $$absolute_path(dtwlib)
+    DEPENDPATH +=  $$absolute_path(dtwlib)
+#    INCLUDEPATH += $$shadowed(dtwlib)
+#    DEPENDPATH +=  $$shadowed(dtwlib)
 
     unix:!mac{
         QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/\''
