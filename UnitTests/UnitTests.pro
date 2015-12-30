@@ -18,5 +18,4 @@
 
 TEMPLATE = subdirs
 CONFIG += ordered
-SUBDIRS = DtwImageTest \
-
+SUBDIRS = DtwImageTest

@@ -37,7 +37,7 @@ private:
 private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
-    void getColoringPageTestCase();
+    void makeColoringPageTestCase();
 };
 
 dtwImageTest::dtwImageTest()
@@ -56,9 +56,9 @@ void dtwImageTest::cleanupTestCase()
     delete(dtwImage);
 }
 
-void dtwImageTest::getColoringPageTestCase()
+void dtwImageTest::makeColoringPageTestCase()
 {
-    QVERIFY(dtwImage->getColoringPage().save("coloringPage.jpg"));
+    QVERIFY(dtwImage->makeColoringPage().save("coloringPage.jpg"));
 }
 
 QTEST_APPLESS_MAIN(dtwImageTest)

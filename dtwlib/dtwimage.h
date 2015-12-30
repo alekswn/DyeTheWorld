@@ -31,10 +31,12 @@ class DtwImage: public QObject
 {
     Q_OBJECT
 public:
-    DtwImage(const QImage &);
+    DtwImage(const QImage&);
     ~DtwImage();
 
-    const QImage & getColoringPage(void) const;
+    QImage resize(const QRect& rect);
+    QImage makeColoringPage(void) const;
+    QImage makeColoringPage(const QRect& rect) const;
 
 private:
     DtwImagePrivate * d_ptr;

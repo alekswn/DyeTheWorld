@@ -52,6 +52,6 @@ int main(int argc, char *argv[])
     }
 
     dtw::DtwImage dtwImage(img);
-    dtwImage.getColoringPage().save(args.at(1));
+    dtwImage.makeColoringPage().save(args.at(1));
 
 }

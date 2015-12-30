@@ -32,4 +32,3 @@ DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 include(../../DyeTheWorld.pri)
 
-message(INCLUDEPATH: $$INCLUDEPATH)

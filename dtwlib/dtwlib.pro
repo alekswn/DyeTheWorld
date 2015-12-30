@@ -19,6 +19,8 @@
 
 VERSION = 0.0.1
 
+CONFIG += c++11
+
 TARGET = dtw
 TEMPLATE = lib
 #CONFIG += staticlib
