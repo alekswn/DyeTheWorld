@@ -36,6 +36,10 @@ public:
 
     Q_DECLARE_PUBLIC(DtwImage);
 
+    double energy(int x, int y) const {
+        return x*y;
+    }
+
 };//struct DtwImagePrivate
 
 }//namespace dtw

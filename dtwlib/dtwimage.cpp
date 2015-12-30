@@ -48,8 +48,25 @@ QImage DtwImage::makeColoringPage(void) const
 #ifdef QT_DEBUG
 QImage DtwImage::dumpEnergy() const {
     Q_D(const DtwImage);
-    QImage energy = QImage(d->m_original.size(), QImage::Format_Grayscale8);
-    //TODO
-    return QImage();
+    QImage energyImage = QImage(d->m_original.size(), QImage::Format_Grayscale8);
+    const int width =  d->m_original.width() - 1;
+    const int height = d->m_original.height() - 1;
+    double maxEnergy = 0.0;
+    QVector<QVector<double>> energyArr(width, QVector<double>(height));
+    for (int i = 1; i < width; i++) {
+        for (int j = 1; j < height; j++) {
+            double e = d->energy(i, j);
+            energyArr[i][j] = e;
+            if (maxEnergy < e) maxEnergy = e;
+        }
+    }
+    const double scaleFactor = 255.0/maxEnergy;
+    for (int j = 1; j < height; j++) {
+        uchar * line = energyImage.scanLine(j);
+        for (int i = 1; i < width; i++) {
+            line[i] = energyArr[i][j]*scaleFactor;
+        }
+    }
+    return energyImage;
 }
 #endif
