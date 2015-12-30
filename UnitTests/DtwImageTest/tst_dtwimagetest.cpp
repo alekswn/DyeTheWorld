@@ -39,6 +39,11 @@ private:
 private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
+
+#ifdef QT_DEBUG
+    void dumpEnergyTestCase();
+#endif
+
     void resizeHalfWidthTestCase();
     void resizeHalfHeightTestCase();
     void resizeHalfSizeTestCase();
@@ -66,11 +71,19 @@ void dtwImageTest::cleanupTestCase()
     delete(dtwImage);
 }
 
-void dtwImageTest::resizeTest(const QSize& newSize) {
+#ifdef QT_DEBUG
+void dtwImageTest::dumpEnergyTestCase() {
+    QVERIFY(dtwImage->dumpEnergy().save("energy.jpg"));
+}
+#endif
+
+void dtwImageTest::resizeTest(const QSize& newSize)
+{
     QVERIFY(dtwImage->resize(newSize).size() == newSize);
 }
 
-void dtwImageTest::resizeHalfWidthTestCase() {
+void dtwImageTest::resizeHalfWidthTestCase()
+{
     resizeTest(QSize(originalImage.size().width()/2, originalImage.size().height()));
 }
 
@@ -98,8 +111,6 @@ void dtwImageTest::resizeDoubleSizeTestCase() {
 void dtwImageTest::resizeTransposeTestCase() {
     resizeTest(originalImage.size().transposed());
 }
-
-
 
 void dtwImageTest::makeColoringPageTestCase()
 {

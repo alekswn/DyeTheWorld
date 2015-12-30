@@ -27,7 +27,6 @@ DtwImage::DtwImage(const QImage& img) : d_ptr(new DtwImagePrivate(this))
     d->m_original = img;
 }
 
-
 DtwImage::~DtwImage()
 {
     delete d_ptr;
@@ -46,4 +45,11 @@ QImage DtwImage::makeColoringPage(void) const
     return QImage();
 }
 
-
+#ifdef QT_DEBUG
+QImage DtwImage::dumpEnergy() const {
+    Q_D(const DtwImage);
+    QImage energy = QImage(d->m_original.size(), QImage::Format_Grayscale8);
+    //TODO
+    return QImage();
+}
+#endif

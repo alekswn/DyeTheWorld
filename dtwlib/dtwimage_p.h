@@ -33,6 +33,7 @@ public:
 
     DtwImage * q_ptr;
     QImage m_original;
+
     Q_DECLARE_PUBLIC(DtwImage);
 
 };//struct DtwImagePrivate

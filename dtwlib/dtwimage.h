@@ -37,6 +37,11 @@ public:
     QImage resize(const QSize& rect) const;
     QImage makeColoringPage(void) const;
     QImage makeColoringPage(const QSize& size) const;
+
+#ifdef QT_DEBUG
+    QImage dumpEnergy() const;
+#endif
+
 private:
     DtwImagePrivate * d_ptr;
     Q_DECLARE_PRIVATE(DtwImage);
