@@ -33,10 +33,17 @@ DtwImage::~DtwImage()
     delete d_ptr;
 }
 
+QImage DtwImage::resize(const QSize& size) const
+{
+    Q_UNUSED(size);
+    Q_D(const DtwImage);
+    return QImage();
+}
+
 QImage DtwImage::makeColoringPage(void) const
 {
     Q_D(const DtwImage);
-    d->calcOriginalEnergy();
-    return d->m_energy;
+    return QImage();
 }
+
 

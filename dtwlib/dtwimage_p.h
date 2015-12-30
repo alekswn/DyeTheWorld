@@ -33,10 +33,7 @@ public:
 
     DtwImage * q_ptr;
     QImage m_original;
-    mutable QImage m_energy;
     Q_DECLARE_PUBLIC(DtwImage);
-
-    void calcOriginalEnergy() const;
 
 };//struct DtwImagePrivate
 

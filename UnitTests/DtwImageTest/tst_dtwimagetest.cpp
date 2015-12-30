@@ -34,9 +34,19 @@ private:
     QImage originalImage;
     DtwImage * dtwImage;
 
+    void resizeTest(const QSize& newSize);
+
 private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
+    void resizeHalfWidthTestCase();
+    void resizeHalfHeightTestCase();
+    void resizeHalfSizeTestCase();
+    void resizeDoubleWidthTestCase();
+    void resizeDoubleHeightTestCase();
+    void resizeDoubleSizeTestCase();
+    void resizeTransposeTestCase();
+
     void makeColoringPageTestCase();
 };
 
@@ -55,6 +65,41 @@ void dtwImageTest::cleanupTestCase()
 {
     delete(dtwImage);
 }
+
+void dtwImageTest::resizeTest(const QSize& newSize) {
+    QVERIFY(dtwImage->resize(newSize).size() == newSize);
+}
+
+void dtwImageTest::resizeHalfWidthTestCase() {
+    resizeTest(QSize(originalImage.size().width()/2, originalImage.size().height()));
+}
+
+void dtwImageTest::resizeHalfHeightTestCase() {
+    resizeTest(QSize(originalImage.size().width(), originalImage.size().height()/2));
+}
+
+void dtwImageTest::resizeHalfSizeTestCase() {
+    resizeTest(originalImage.size()/2);
+}
+
+void dtwImageTest::resizeDoubleWidthTestCase() {
+    resizeTest(QSize(originalImage.size().width()*2, originalImage.size().height()));
+}
+
+void dtwImageTest::resizeDoubleHeightTestCase() {
+    resizeTest(QSize(originalImage.size().width(), originalImage.size().height()*2));
+
+}
+
+void dtwImageTest::resizeDoubleSizeTestCase() {
+    resizeTest(originalImage.size()*2);
+}
+
+void dtwImageTest::resizeTransposeTestCase() {
+    resizeTest(originalImage.size().transposed());
+}
+
+
 
 void dtwImageTest::makeColoringPageTestCase()
 {

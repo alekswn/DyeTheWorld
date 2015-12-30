@@ -34,10 +34,9 @@ public:
     DtwImage(const QImage&);
     ~DtwImage();
 
-    QImage resize(const QRect& rect);
+    QImage resize(const QSize& rect) const;
     QImage makeColoringPage(void) const;
-    QImage makeColoringPage(const QRect& rect) const;
-
+    QImage makeColoringPage(const QSize& size) const;
 private:
     DtwImagePrivate * d_ptr;
     Q_DECLARE_PRIVATE(DtwImage);
