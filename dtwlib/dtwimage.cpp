@@ -18,6 +18,7 @@
 
 #include "dtwimage.h"
 #include "dtwimage_p.h"
+#include "benchmark.h"
 
 using namespace dtw;
 
@@ -47,6 +48,7 @@ QImage DtwImage::makeColoringPage(void) const
 
 #ifdef QT_DEBUG
 QImage DtwImage::dumpEnergy() const {
+    BENCHMARK_START();
     Q_D(const DtwImage);
     QImage energyImage = QImage(d->m_original.size(), QImage::Format_Grayscale8);
     const int width =  d->m_original.width() - 1;
@@ -67,6 +69,7 @@ QImage DtwImage::dumpEnergy() const {
             line[i] = energyArr[i][j]*scaleFactor;
         }
     }
+    BENCHMARK_STOP();
     return energyImage;
 }
 #endif
