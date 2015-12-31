@@ -70,3 +70,37 @@ QImage DtwImage::dumpEnergy() const {
     return energyImage;
 }
 #endif
+
+double DtwImagePrivate::dualGradientEnergy(int x, int y, const QImage& picture) {
+    Q_ASSERT(x > 0 && x < picture.width() - 1 && y > 0 && y < picture.height() - 1);
+
+    const QRgb pX = picture.pixel(x - 1, y);
+    const QRgb sX = picture.pixel(x + 1, y);
+    const QRgb pY = picture.pixel(x, y - 1);
+    const QRgb sY = picture.pixel(x, y + 1);
+
+    const int RpX  = qRed(pX);
+    const int GpX  = qGreen(pX);
+    const int BpX  = qBlue(pX);
+    const int RsX  = qRed(sX);
+    const int GsX  = qGreen(sX);
+    const int BsX  = qBlue(sX);
+    const int RpY  = qRed(pY);
+    const int GpY  = qGreen(pY);
+    const int BpY  = qBlue(pY);
+    const int RsY  = qRed(sY);
+    const int GsY  = qGreen(sY);
+    const int BsY  = qBlue(sY);
+
+    const int dRx  = RpX - RsX;
+    const int dGx  = GpX - GsX;
+    const int dBx  = BpX - BsX;
+    const int dRy  = RpY - RsY;
+    const int dGy  = GpY - GsY;
+    const int dBy  = BpY - BsY;
+
+    const int Dx2  = dRx*dRx + dGx*dGx + dBx*dBx;
+    const int Dy2  = dRy*dRy + dGy*dGy + dBy*dBy;
+
+    return std::sqrt(Dx2 + Dy2);
+}

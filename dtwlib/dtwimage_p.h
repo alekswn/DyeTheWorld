@@ -37,8 +37,11 @@ public:
     Q_DECLARE_PUBLIC(DtwImage);
 
     double energy(int x, int y) const {
-        return x*y;
+        Q_ASSERT(x > 0 && x < m_original.width() - 1 && y > 0 && y < m_original.height() - 1);
+        return dualGradientEnergy(x, y, m_original);
     }
+
+    static double dualGradientEnergy(int x, int y, const QImage& img);
 
 };//struct DtwImagePrivate
 
