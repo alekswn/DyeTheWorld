@@ -117,10 +117,12 @@ inline void BENCHMARK_FINISH( std::ostream& OUT_STREAM, const char NAME[] ) {
                  << "Wall time: "
                  << std::chrono::duration<double, std::milli>(t_end-t_start).count()
                  << " ms";
-    if(StopAllocTrace())
+    if(StopAllocTrace()) {
         OUT_STREAM << " HEAP MEM : " << max_mem_usage << " bytes";
+        if  (mem_allocated > 0)  OUT_STREAM << " LEAK WARNING";
+    }
     OUT_STREAM << std::endl;
-   }
+}
 #define BENCHMARK_STOP() BENCHMARK_FINISH( std::cerr, __PRETTY_FUNCTION__ );
 #else
 #define BENCHMARK_START()
