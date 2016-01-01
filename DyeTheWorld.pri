@@ -69,3 +69,7 @@ equals(TEMPLATE, "app") {
     DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
 }
+
+debug {
+    DEFINES += BENCH
+}
