@@ -18,11 +18,27 @@
 
 #include "dtwimage.h"
 #include "dtwimage_p.h"
-#include "benchmark.h"
+
+#include <QDebug>
+
+
+#include <array>
+#include <cmath>
 
 using namespace dtw;
 
-DtwImage::DtwImage(const QImage& img) : d_ptr(new DtwImagePrivate(this))
+const QImage::Format DtwImage::DTW_FORMAT = QImage::Format_ARGB32;
+
+static const int INVALID_INDEX = -1;
+static const std::array<Neighbour, 3> UPPERS = { UP_RIGHT, UP, UP_LEFT };
+static const std::array<Neighbour, 3> LOWERS[] = { DOWN_RIGHT, DOWN, DOWN_LEFT };
+static const std::array<Neighbour, 3> LEFTS[] = { UP_LEFT, LEFT, DOWN_LEFT };
+static const std::array<Neighbour, 3> RIGHTS[] = { UP_RIGHT, RIGHT, DOWN_RIGHT };
+
+static double BORDER_ENERGY = std::numeric_limits<double>::infinity();
+static double DELETED_ENERGY = std::nan("DELETED");
+
+DtwImage::DtwImage(const QImage& img) : d_ptr(new DtwImagePrivate(this, img))
 {
     Q_D(DtwImage);
     d->m_original = img;
@@ -37,51 +53,27 @@ QImage DtwImage::resize(const QSize& size) const
 {
     Q_UNUSED(size);
     Q_D(const DtwImage);
-    return QImage();
+    return d->makeImage();
 }
 
 QImage DtwImage::makeColoringPage(void) const
 {
     Q_D(const DtwImage);
-    return QImage();
+    return d->makeImage();
 }
 
-#ifdef QT_DEBUG
-QImage DtwImage::dumpEnergy() const {
-    BENCHMARK_START();
+QImage DtwImage::makeColoringPage(const QSize& size) const
+{
+    Q_UNUSED(size);
     Q_D(const DtwImage);
-    QImage energyImage = QImage(d->m_original.size(), QImage::Format_Grayscale8);
-    const int width =  d->m_original.width() - 1;
-    const int height = d->m_original.height() - 1;
-    double maxEnergy = 0.0;
-    QVector<QVector<double>> energyArr(width, QVector<double>(height));
-    for (int i = 1; i < width; i++) {
-        for (int j = 1; j < height; j++) {
-            double e = d->energy(i, j);
-            energyArr[i][j] = e;
-            if (maxEnergy < e) maxEnergy = e;
-        }
-    }
-    const double scaleFactor = 255.0/maxEnergy;
-    for (int j = 1; j < height; j++) {
-        uchar * line = energyImage.scanLine(j);
-        for (int i = 1; i < width; i++) {
-            line[i] = energyArr[i][j]*scaleFactor;
-        }
-    }
-    BENCHMARK_STOP();
-    return energyImage;
+    return d->makeImage();
 }
-#endif
 
-double DtwImagePrivate::dualGradientEnergy(int x, int y, const QImage& picture) {
-    Q_ASSERT(x > 0 && x < picture.width() - 1 && y > 0 && y < picture.height() - 1);
+DtwImagePrivate::Cell::Cell()
+    : neighbours(), energy(BORDER_ENERGY), color()
+{}
 
-    const QRgb pX = picture.pixel(x - 1, y);
-    const QRgb sX = picture.pixel(x + 1, y);
-    const QRgb pY = picture.pixel(x, y - 1);
-    const QRgb sY = picture.pixel(x, y + 1);
-
+static inline double dualGradientEnergy(QRgb pX, QRgb sX, QRgb pY, QRgb sY) {
     const int RpX  = qRed(pX);
     const int GpX  = qGreen(pX);
     const int BpX  = qBlue(pX);
@@ -106,4 +98,197 @@ double DtwImagePrivate::dualGradientEnergy(int x, int y, const QImage& picture) 
     const int Dy2  = dRy*dRy + dGy*dGy + dBy*dBy;
 
     return std::sqrt(Dx2 + Dy2);
+}
+
+
+DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
+    : q_ptr(q), size(img.size()),
+      cells(size.height() * size.width())
+{
+    if (img.format() != q->DTW_FORMAT)
+        img = img.convertToFormat(q->DTW_FORMAT, Qt::AutoColor);
+    const int height = size.height();
+    const int width  = size.width();
+    if (height < 3 || width < 3)  throw std::invalid_argument("Incorrect image dimensions");
+    QMutableVectorIterator<Cell> it(cells);
+    //Fillin colors
+    for (int i = 0; i < height; i++) {
+        const QRgb* rawLine = reinterpret_cast<const QRgb*>(img.constScanLine(i));
+        for (int j = 0; j < width; j++)
+        {
+            Cell & cell = it.next();
+            cell.color = rawLine[j];
+        }
+    }
+
+    //Establish connections and calculate energy (TODO)
+    cells[0].neighbours[DOWN_LEFT] = INVALID_INDEX;
+    cells[0].neighbours[LEFT] = INVALID_INDEX;
+    cells[0].neighbours[UP_LEFT] = INVALID_INDEX;
+    cells[0].neighbours[UP] = INVALID_INDEX;
+    cells[0].neighbours[UP_RIGHT] = INVALID_INDEX;
+    cells[0].neighbours[RIGHT] = 1;
+    cells[0].neighbours[DOWN_RIGHT] = width + 1;
+    cells[0].neighbours[DOWN] = width;
+    for (int j = 1; j < width - 1; j++)
+    {
+        cells[j].neighbours[UP_LEFT] = INVALID_INDEX;
+        cells[j].neighbours[UP] = INVALID_INDEX;
+        cells[j].neighbours[UP_RIGHT] = INVALID_INDEX;
+        cells[j].neighbours[RIGHT] = j + 1;
+        cells[j].neighbours[DOWN_RIGHT] = j + width + 1;
+        cells[j].neighbours[DOWN] = j + width;
+        cells[j].neighbours[DOWN_LEFT] = j + width - 1;
+        cells[j].neighbours[LEFT] = j - 1;
+    }
+    int k = width - 1;
+    cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
+    cells[k].neighbours[UP] = INVALID_INDEX;
+    cells[k].neighbours[UP_RIGHT] = INVALID_INDEX;
+    cells[k].neighbours[RIGHT] = INVALID_INDEX;
+    cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+    cells[k].neighbours[DOWN] = k + width;
+    cells[k].neighbours[DOWN_LEFT] = k + width - 1;
+    cells[k].neighbours[LEFT] = k - 1;
+
+    k++;
+    for (int i = 1; i < height - 1; i++) {
+        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[LEFT] = INVALID_INDEX;
+        cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[UP] = k - width;
+        cells[k].neighbours[UP_RIGHT] = k - width + 1;
+        cells[k].neighbours[RIGHT] = k + 1;
+        cells[k].neighbours[DOWN_RIGHT] = k + width + 1;
+        cells[k].neighbours[DOWN] = k + width;
+        k++;
+        for (int j = 1; j < width - 1; j++)
+        {
+            const int up = k - width;
+            const int down = k + width;
+            const int left = k - 1;
+            const int right = k + 1;
+            cells[k].neighbours[UP_LEFT] = up - 1;
+            cells[k].neighbours[UP] = up;
+            cells[k].neighbours[UP_RIGHT] = up + 1;
+            cells[k].neighbours[RIGHT] = right;
+            cells[k].neighbours[DOWN_RIGHT] = down + 1;
+            cells[k].neighbours[DOWN] = down;
+            cells[k].neighbours[DOWN_LEFT] = down - 1;
+            cells[k].neighbours[LEFT] = left;
+            cells[k].energy = dualGradientEnergy(cells[up].color, cells[down].color,
+                                                 cells[left].color, cells[right].color);
+            k++;
+        }
+        cells[k].neighbours[UP_LEFT] =  k - width - 1;
+        cells[k].neighbours[UP] =  k - width;
+        cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
+        cells[k].neighbours[RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN] = k + width;
+        cells[k].neighbours[DOWN_LEFT] = k + width - 1;
+        cells[k].neighbours[LEFT] = k - 1;
+        k++;
+    }
+
+    cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+    cells[k].neighbours[LEFT] = INVALID_INDEX;
+    cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
+    cells[k].neighbours[UP] = k - width;
+    cells[k].neighbours[UP_RIGHT] = k - width + 1;
+    cells[k].neighbours[RIGHT] = k + 1;
+    cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+    cells[k].neighbours[DOWN] = INVALID_INDEX;
+    k++;
+    for (int j = 1; j < width - 1; j++)
+    {
+        cells[k].neighbours[UP_LEFT] = k - width - 1;
+        cells[k].neighbours[UP] = k - width;
+        cells[k].neighbours[UP_RIGHT] = k - width + 1;
+        cells[k].neighbours[RIGHT] = k + 1;
+        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[LEFT] = k - 1;
+        k++;
+    }
+    cells[k].neighbours[UP_LEFT] =  k - width - 1;
+    cells[k].neighbours[UP] =  k - width;
+    cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
+    cells[k].neighbours[RIGHT] = INVALID_INDEX;
+    cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+    cells[k].neighbours[DOWN] = INVALID_INDEX;
+    cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+    cells[k].neighbours[LEFT] = k - 1;
+    Q_ASSERT(++k == cells.size());
+}
+
+
+QImage DtwImagePrivate::makeImage() const
+{
+    return QImage();
+}
+
+#ifdef QT_DEBUG
+QImage DtwImage::dumpEnergy() const {
+    Q_D(const DtwImage);
+    QImage energyImage = QImage(d->m_original.size(), QImage::Format_Grayscale8);
+    const int width =  d->m_original.width() - 1;
+    const int height = d->m_original.height() - 1;
+    double maxEnergy = 0.0;
+    QVector<QVector<double>> energyArr(width, QVector<double>(height));
+    for (int i = 1; i < width - 1; i++) {
+        for (int j = 1; j < height; j++) {
+            double e = d->energy(i, j);
+            energyArr[i][j] = e;
+            if (maxEnergy < e) maxEnergy = e;
+        }
+    }
+    const double scaleFactor = 255.0/maxEnergy;
+    for (int j = 1; j < height - 1; j++) {
+        uchar * line = energyImage.scanLine(j);
+        for (int i = 1; i < width - 1; i++) {
+            line[i] = energyArr[i][j]*scaleFactor;
+        }
+    }
+    return energyImage;
+}
+
+QImage DtwImage::dumpImage() const {
+    Q_D(const DtwImage);
+    int k = 0;
+    do {
+        if (k >= d->cells.size()) return QImage();
+        if (!std::isnan(d->cells[k].energy)) break;
+        k++;
+    } while(true);
+
+    Q_ASSERT(d->cells[k].neighbours[UP] < 0
+             && d->cells[k].neighbours[LEFT] < 0);
+
+    const int height = d->size.height();
+    const int width = d->size.width();
+
+    QImage image(d->size, DTW_FORMAT);
+    for (int i = 0; i < height; i++) {
+        QRgb * line = reinterpret_cast<QRgb *>(image.scanLine(i));
+        const int nextLineStart = d->cells[k].neighbours[DOWN];
+        for (int j = 0; j < width; j++) {
+            Q_ASSERT(k >= 0 && k < d->cells.size());
+            line[j] = d->cells[k].color;
+            k = d->cells[k].neighbours[RIGHT];
+        }
+        Q_ASSERT(k < 0);
+        k = nextLineStart;
+    }
+    Q_ASSERT(k < 0);
+
+    return image;
+}
+#endif
+
+double DtwImagePrivate::energy(int x, int y) const { //TODO
+    const int k = y*size.width() + x;
+    Q_ASSERT(k>0 && k < cells.size());
+    return cells[k].energy;
 }

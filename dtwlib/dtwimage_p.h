@@ -24,24 +24,30 @@
 
 namespace dtw {
 
+enum Neighbour { UP, RIGHT, DOWN, LEFT, UP_RIGHT, DOWN_RIGHT, DOWN_LEFT,
+                       UP_LEFT, NEIGHBOUR_LAST };
+
 class DtwImagePrivate
 {
-public:
-    DtwImagePrivate(DtwImage *q)
-        : q_ptr(q)
-{}
+struct Cell {
+        std::array<int, NEIGHBOUR_LAST> neighbours;
+        double energy;
+        QRgb color;
+        Cell();
+    };
 
+public:
     DtwImage * q_ptr;
+    QSize size;
+    QVector<Cell> cells;
     QImage m_original;
 
     Q_DECLARE_PUBLIC(DtwImage);
+    DtwImagePrivate(DtwImage *q, QImage img);
 
-    double energy(int x, int y) const {
-        Q_ASSERT(x > 0 && x < m_original.width() - 1 && y > 0 && y < m_original.height() - 1);
-        return dualGradientEnergy(x, y, m_original);
-    }
+    QImage makeImage() const;
 
-    static double dualGradientEnergy(int x, int y, const QImage& img);
+    double energy(int x, int y) const;
 
 };//struct DtwImagePrivate
 

@@ -31,6 +31,8 @@ class DtwImage: public QObject
 {
     Q_OBJECT
 public:
+    static const QImage::Format DTW_FORMAT;
+
     DtwImage(const QImage&);
     ~DtwImage();
 
@@ -40,6 +42,7 @@ public:
 
 #ifdef QT_DEBUG
     QImage dumpEnergy() const;
+    QImage dumpImage() const;
 #endif
 
 private:

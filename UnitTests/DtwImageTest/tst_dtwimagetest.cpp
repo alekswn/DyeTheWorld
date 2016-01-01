@@ -20,6 +20,7 @@
 #include <QtTest>
 
 #include "dtwimage.h"
+#include "benchmark.h"
 
 using namespace dtw;
 
@@ -56,14 +57,21 @@ private Q_SLOTS:
 };
 
 dtwImageTest::dtwImageTest()
-    : originalImage(":/testImage.jpg")
+    : originalImage(QImage(":/testImage.jpg").convertToFormat(DtwImage::DTW_FORMAT))
 {
     originalImage.save("originalImage.jpg");
 }
 
 void dtwImageTest::initTestCase()
 {
+    BENCHMARK_START();
     dtwImage = new DtwImage(originalImage);
+    BENCHMARK_STOP();
+#ifdef QT_DEBUG
+    QImage dumpedImage = dtwImage->dumpImage();
+    dumpedImage.save("dumpedImage.jpg");
+    QVERIFY(originalImage == dumpedImage);
+#endif
 }
 
 void dtwImageTest::cleanupTestCase()
