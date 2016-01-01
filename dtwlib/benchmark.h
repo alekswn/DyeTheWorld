@@ -27,6 +27,8 @@
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
+//IMPORTANT NOTE: It is not possible to perform benchmarking of multiple compilation
+//                units simultaneously.
 #ifdef BENCH
 #include <ctime>
 #include <chrono>
