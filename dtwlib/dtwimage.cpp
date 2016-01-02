@@ -70,10 +70,16 @@ QImage DtwImage::makeColoringPage(const QSize& size) const
 }
 
 DtwImagePrivate::Cell::Cell()
-    : neighbours(), energy(BORDER_ENERGY), color()
+    : neighbours(), energy(BORDER_ENERGY)
 {}
 
-static inline double dualGradientEnergy(QRgb pX, QRgb sX, QRgb pY, QRgb sY) {
+double DtwImagePrivate::dualGradientEnergy(int left, int right, int up, int down) {
+
+    const QRgb pX = colors[left];
+    const QRgb sX = colors[right];
+    const QRgb pY = colors[up];
+    const QRgb sY = colors[down];
+
     const int RpX  = qRed(pX);
     const int GpX  = qGreen(pX);
     const int BpX  = qBlue(pX);
@@ -103,6 +109,7 @@ static inline double dualGradientEnergy(QRgb pX, QRgb sX, QRgb pY, QRgb sY) {
 
 DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
     : q_ptr(q), size(img.size()),
+      colors(size.height() * size.width()),
       cells(size.height() * size.width())
 {
     if (img.format() != q->DTW_FORMAT)
@@ -110,14 +117,15 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
     const int height = size.height();
     const int width  = size.width();
     if (height < 3 || width < 3)  throw std::invalid_argument("Incorrect image dimensions");
-    QMutableVectorIterator<Cell> it(cells);
     //Fillin colors
-    for (int i = 0; i < height; i++) {
-        const QRgb* rawLine = reinterpret_cast<const QRgb*>(img.constScanLine(i));
-        for (int j = 0; j < width; j++)
-        {
-            Cell & cell = it.next();
-            cell.color = rawLine[j];
+    {
+        int k = 0;
+        for (int i = 0; i < height; i++) {
+            const QRgb* rawLine = reinterpret_cast<const QRgb*>(img.constScanLine(i));
+            for (int j = 0; j < width; j++)
+            {
+                colors[k++] = rawLine[j];
+            }
         }
     }
 
@@ -133,8 +141,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
         cells[0].neighbours[RIGHT] = right;
         cells[0].neighbours[DOWN_RIGHT] = down + 1;
         cells[0].neighbours[DOWN] = down;
-        cells[0].energy = dualGradientEnergy(cells[0].color, cells[down].color,
-                                         cells[0].color, cells[right].color);
+        cells[0].energy = dualGradientEnergy(0, right, 0, down);
 
     }
     for (int j = 1; j < width - 1; j++)
@@ -150,8 +157,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
         cells[j].neighbours[DOWN] = down;
         cells[j].neighbours[DOWN_LEFT] = down - 1;
         cells[j].neighbours[LEFT] = left;
-        cells[j].energy = dualGradientEnergy(cells[j].color, cells[down].color,
-                                         cells[left].color, cells[right].color);
+        cells[j].energy = dualGradientEnergy(left, right, j, down);
     }
     {
         int k = width - 1;
@@ -165,8 +171,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
         cells[k].neighbours[DOWN] = down;
         cells[k].neighbours[DOWN_LEFT] = down - 1;
         cells[k].neighbours[LEFT] = left;
-        cells[k].energy = dualGradientEnergy(cells[k].color, cells[down].color,
-                                         cells[left].color, cells[k].color);
+        cells[k].energy = dualGradientEnergy( left, k, k, down );
     }
     int k = width;
     for (int i = 1; i < height - 1; i++) {
@@ -182,8 +187,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
             cells[k].neighbours[RIGHT] = right;
             cells[k].neighbours[DOWN_RIGHT] = down + 1;
             cells[k].neighbours[DOWN] = down;
-            cells[k].energy = dualGradientEnergy(cells[up].color, cells[down].color,
-                                             cells[k].color, cells[right].color);
+            cells[k].energy = dualGradientEnergy( k, right, up, down );
             k++;
         }
         for (int j = 1; j < width - 1; j++)
@@ -200,8 +204,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
             cells[k].neighbours[DOWN] = down;
             cells[k].neighbours[DOWN_LEFT] = down - 1;
             cells[k].neighbours[LEFT] = left;
-            cells[k].energy = dualGradientEnergy(cells[up].color, cells[down].color,
-                                                 cells[left].color, cells[right].color);
+            cells[k].energy = dualGradientEnergy( left, right, up, down );
             k++;
         }
         {
@@ -216,8 +219,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
             cells[k].neighbours[DOWN] = down;
             cells[k].neighbours[DOWN_LEFT] = down - 1;
             cells[k].neighbours[LEFT] = left;
-            cells[k].energy = dualGradientEnergy(cells[up].color, cells[down].color,
-                                                 cells[left].color, cells[k].color);
+            cells[k].energy = dualGradientEnergy( left, k, up, down );
             k++;
         }
     }
@@ -232,8 +234,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
         cells[k].neighbours[RIGHT] = right;
         cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
         cells[k].neighbours[DOWN] = INVALID_INDEX;
-        cells[k].energy = dualGradientEnergy(cells[up].color, cells[k].color,
-                                             cells[k].color, cells[right].color);
+        cells[k].energy = dualGradientEnergy( k, right, up, k );
         k++;
     }
     for (int j = 1; j < width - 1; j++)
@@ -249,8 +250,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
         cells[k].neighbours[DOWN] = INVALID_INDEX;
         cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
         cells[k].neighbours[LEFT] = left;
-        cells[k].energy = dualGradientEnergy(cells[up].color, cells[k].color,
-                                             cells[left].color, cells[right].color);
+        cells[k].energy = dualGradientEnergy( left, right, up, k );
         k++;
     }
     {
@@ -264,9 +264,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
         cells[k].neighbours[DOWN] = INVALID_INDEX;
         cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
         cells[k].neighbours[LEFT] = left;
-        cells[k].energy = dualGradientEnergy(cells[up].color, cells[k].color,
-                                             cells[left].color, cells[k].color);
-
+        cells[k].energy = dualGradientEnergy( left, k, up, k );
     }
     Q_ASSERT(++k == cells.size());
 }
@@ -323,7 +321,7 @@ QImage DtwImage::dumpImage() const {
         const int nextLineStart = d->cells[k].neighbours[DOWN];
         for (int j = 0; j < width; j++) {
             Q_ASSERT(k >= 0 && k < d->cells.size());
-            line[j] = d->cells[k].color;
+            line[j] = d->colors[k];
             k = d->cells[k].neighbours[RIGHT];
         }
         Q_ASSERT(k < 0);

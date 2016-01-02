@@ -32,13 +32,13 @@ class DtwImagePrivate
 struct Cell {
         std::array<int, NEIGHBOUR_LAST> neighbours;
         double energy;
-        QRgb color;
         Cell();
     };
 
 public:
     DtwImage * q_ptr;
     QSize size;
+    QVector<QRgb> colors;
     QVector<Cell> cells;
     QImage m_original;
 
@@ -49,6 +49,7 @@ public:
 
     double energy(int x, int y) const;
 
+    double dualGradientEnergy(int left, int rigth, int up, int down);
 };//struct DtwImagePrivate
 
 }//namespace dtw
