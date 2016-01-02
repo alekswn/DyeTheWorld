@@ -122,46 +122,70 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
     }
 
     //Establish connections and calculate energy (TODO)
-    cells[0].neighbours[DOWN_LEFT] = INVALID_INDEX;
-    cells[0].neighbours[LEFT] = INVALID_INDEX;
-    cells[0].neighbours[UP_LEFT] = INVALID_INDEX;
-    cells[0].neighbours[UP] = INVALID_INDEX;
-    cells[0].neighbours[UP_RIGHT] = INVALID_INDEX;
-    cells[0].neighbours[RIGHT] = 1;
-    cells[0].neighbours[DOWN_RIGHT] = width + 1;
-    cells[0].neighbours[DOWN] = width;
+    {
+        const int down = width;
+        const int right = 1;
+        cells[0].neighbours[DOWN_LEFT] = INVALID_INDEX;
+        cells[0].neighbours[LEFT] = INVALID_INDEX;
+        cells[0].neighbours[UP_LEFT] = INVALID_INDEX;
+        cells[0].neighbours[UP] = INVALID_INDEX;
+        cells[0].neighbours[UP_RIGHT] = INVALID_INDEX;
+        cells[0].neighbours[RIGHT] = right;
+        cells[0].neighbours[DOWN_RIGHT] = down + 1;
+        cells[0].neighbours[DOWN] = down;
+        cells[0].energy = dualGradientEnergy(cells[0].color, cells[down].color,
+                                         cells[0].color, cells[right].color);
+
+    }
     for (int j = 1; j < width - 1; j++)
     {
+        const int down = j + width;
+        const int right = j + 1;
+        const int left = j - 1;
         cells[j].neighbours[UP_LEFT] = INVALID_INDEX;
         cells[j].neighbours[UP] = INVALID_INDEX;
         cells[j].neighbours[UP_RIGHT] = INVALID_INDEX;
-        cells[j].neighbours[RIGHT] = j + 1;
-        cells[j].neighbours[DOWN_RIGHT] = j + width + 1;
-        cells[j].neighbours[DOWN] = j + width;
-        cells[j].neighbours[DOWN_LEFT] = j + width - 1;
-        cells[j].neighbours[LEFT] = j - 1;
+        cells[j].neighbours[RIGHT] = right;
+        cells[j].neighbours[DOWN_RIGHT] = down + 1;
+        cells[j].neighbours[DOWN] = down;
+        cells[j].neighbours[DOWN_LEFT] = down - 1;
+        cells[j].neighbours[LEFT] = left;
+        cells[j].energy = dualGradientEnergy(cells[j].color, cells[down].color,
+                                         cells[left].color, cells[right].color);
     }
-    int k = width - 1;
-    cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
-    cells[k].neighbours[UP] = INVALID_INDEX;
-    cells[k].neighbours[UP_RIGHT] = INVALID_INDEX;
-    cells[k].neighbours[RIGHT] = INVALID_INDEX;
-    cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
-    cells[k].neighbours[DOWN] = k + width;
-    cells[k].neighbours[DOWN_LEFT] = k + width - 1;
-    cells[k].neighbours[LEFT] = k - 1;
-
-    k++;
-    for (int i = 1; i < height - 1; i++) {
-        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
-        cells[k].neighbours[LEFT] = INVALID_INDEX;
+    {
+        int k = width - 1;
+        const int down = k + width;;
+        const int left = k - 1;
         cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
-        cells[k].neighbours[UP] = k - width;
-        cells[k].neighbours[UP_RIGHT] = k - width + 1;
-        cells[k].neighbours[RIGHT] = k + 1;
-        cells[k].neighbours[DOWN_RIGHT] = k + width + 1;
-        cells[k].neighbours[DOWN] = k + width;
-        k++;
+        cells[k].neighbours[UP] = INVALID_INDEX;
+        cells[k].neighbours[UP_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN] = down;
+        cells[k].neighbours[DOWN_LEFT] = down - 1;
+        cells[k].neighbours[LEFT] = left;
+        cells[k].energy = dualGradientEnergy(cells[k].color, cells[down].color,
+                                         cells[left].color, cells[k].color);
+    }
+    int k = width;
+    for (int i = 1; i < height - 1; i++) {
+        {
+            const int up = k - width;
+            const int down = k + width;
+            const int right = k + 1;
+            cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+            cells[k].neighbours[LEFT] = INVALID_INDEX;
+            cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
+            cells[k].neighbours[UP] = up;
+            cells[k].neighbours[UP_RIGHT] = up + 1;
+            cells[k].neighbours[RIGHT] = right;
+            cells[k].neighbours[DOWN_RIGHT] = down + 1;
+            cells[k].neighbours[DOWN] = down;
+            cells[k].energy = dualGradientEnergy(cells[up].color, cells[down].color,
+                                             cells[k].color, cells[right].color);
+            k++;
+        }
         for (int j = 1; j < width - 1; j++)
         {
             const int up = k - width;
@@ -180,46 +204,70 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
                                                  cells[left].color, cells[right].color);
             k++;
         }
-        cells[k].neighbours[UP_LEFT] =  k - width - 1;
-        cells[k].neighbours[UP] =  k - width;
-        cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
-        cells[k].neighbours[RIGHT] = INVALID_INDEX;
+        {
+            const int up = k - width;
+            const int down = k + width;
+            const int left = k - 1;
+            cells[k].neighbours[UP_LEFT] =  up - 1;
+            cells[k].neighbours[UP] =  up;
+            cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
+            cells[k].neighbours[RIGHT] = INVALID_INDEX;
+            cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+            cells[k].neighbours[DOWN] = down;
+            cells[k].neighbours[DOWN_LEFT] = down - 1;
+            cells[k].neighbours[LEFT] = left;
+            cells[k].energy = dualGradientEnergy(cells[up].color, cells[down].color,
+                                                 cells[left].color, cells[k].color);
+            k++;
+        }
+    }
+    {
+        const int up = k - width;
+        const int right = k + 1;
+        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[LEFT] = INVALID_INDEX;
+        cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[UP] = up;
+        cells[k].neighbours[UP_RIGHT] = up + 1;
+        cells[k].neighbours[RIGHT] = right;
         cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
-        cells[k].neighbours[DOWN] = k + width;
-        cells[k].neighbours[DOWN_LEFT] = k + width - 1;
-        cells[k].neighbours[LEFT] = k - 1;
+        cells[k].neighbours[DOWN] = INVALID_INDEX;
+        cells[k].energy = dualGradientEnergy(cells[up].color, cells[k].color,
+                                             cells[k].color, cells[right].color);
         k++;
     }
-
-    cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
-    cells[k].neighbours[LEFT] = INVALID_INDEX;
-    cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
-    cells[k].neighbours[UP] = k - width;
-    cells[k].neighbours[UP_RIGHT] = k - width + 1;
-    cells[k].neighbours[RIGHT] = k + 1;
-    cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
-    cells[k].neighbours[DOWN] = INVALID_INDEX;
-    k++;
     for (int j = 1; j < width - 1; j++)
     {
-        cells[k].neighbours[UP_LEFT] = k - width - 1;
-        cells[k].neighbours[UP] = k - width;
-        cells[k].neighbours[UP_RIGHT] = k - width + 1;
-        cells[k].neighbours[RIGHT] = k + 1;
+        const int up = k - width;
+        const int left = k - 1;
+        const int right = k + 1;
+        cells[k].neighbours[UP_LEFT] = up - 1;
+        cells[k].neighbours[UP] = up;
+        cells[k].neighbours[UP_RIGHT] = up + 1;
+        cells[k].neighbours[RIGHT] = right;
         cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
         cells[k].neighbours[DOWN] = INVALID_INDEX;
         cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
-        cells[k].neighbours[LEFT] = k - 1;
+        cells[k].neighbours[LEFT] = left;
+        cells[k].energy = dualGradientEnergy(cells[up].color, cells[k].color,
+                                             cells[left].color, cells[right].color);
         k++;
     }
-    cells[k].neighbours[UP_LEFT] =  k - width - 1;
-    cells[k].neighbours[UP] =  k - width;
-    cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
-    cells[k].neighbours[RIGHT] = INVALID_INDEX;
-    cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
-    cells[k].neighbours[DOWN] = INVALID_INDEX;
-    cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
-    cells[k].neighbours[LEFT] = k - 1;
+    {
+        const int up = k - width;
+        const int left = k - 1;
+        cells[k].neighbours[UP_LEFT] =  up - 1;
+        cells[k].neighbours[UP] =  up;
+        cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
+        cells[k].neighbours[RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[LEFT] = left;
+        cells[k].energy = dualGradientEnergy(cells[up].color, cells[k].color,
+                                             cells[left].color, cells[k].color);
+
+    }
     Q_ASSERT(++k == cells.size());
 }
 
@@ -237,15 +285,15 @@ QImage DtwImage::dumpEnergy() const {
     const int height = d->m_original.height() - 1;
     double maxEnergy = 0.0;
     QVector<QVector<double>> energyArr(width, QVector<double>(height));
-    for (int i = 1; i < width - 1; i++) {
-        for (int j = 1; j < height; j++) {
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < height; j++) {
             double e = d->energy(i, j);
             energyArr[i][j] = e;
             if (maxEnergy < e) maxEnergy = e;
         }
     }
     const double scaleFactor = 255.0/maxEnergy;
-    for (int j = 1; j < height - 1; j++) {
+    for (int j = 0; j < height; j++) {
         uchar * line = energyImage.scanLine(j);
         for (int i = 1; i < width - 1; i++) {
             line[i] = energyArr[i][j]*scaleFactor;
@@ -289,6 +337,6 @@ QImage DtwImage::dumpImage() const {
 
 double DtwImagePrivate::energy(int x, int y) const { //TODO
     const int k = y*size.width() + x;
-    Q_ASSERT(k>0 && k < cells.size());
+    Q_ASSERT(k>=0 && k < cells.size());
     return cells[k].energy;
 }
