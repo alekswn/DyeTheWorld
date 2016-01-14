@@ -43,6 +43,7 @@ private Q_SLOTS:
 
 #ifdef QT_DEBUG
     void dumpEnergyTestCase();
+    void dumpSeamsTestCase();
 #endif
 
     void resizeHalfWidthTestCase();
@@ -69,7 +70,7 @@ void dtwImageTest::initTestCase()
     BENCHMARK_STOP();
 #ifdef QT_DEBUG
     QImage dumpedImage = dtwImage->dumpImage();
-    dumpedImage.save("dumpedImage.jpg");
+    dumpedImage.save("dumpedImage.bmp");
     QVERIFY(originalImage == dumpedImage);
 #endif
 }
@@ -81,8 +82,13 @@ void dtwImageTest::cleanupTestCase()
 
 #ifdef QT_DEBUG
 void dtwImageTest::dumpEnergyTestCase() {
-    QVERIFY(dtwImage->dumpEnergy().save("energy.jpg"));
+    QVERIFY(dtwImage->dumpEnergy().save("energy.bmp"));
 }
+
+void dtwImageTest::dumpSeamsTestCase() {
+    QVERIFY(dtwImage->dumpSeams().save("seams.bmp"));
+}
+
 #endif
 
 void dtwImageTest::resizeTest(const QSize& newSize)

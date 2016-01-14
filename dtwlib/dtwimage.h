@@ -34,8 +34,11 @@ public:
     static const QImage::Format DTW_FORMAT;
 
     DtwImage(const QImage&);
+    DtwImage(const DtwImage&);
+
     ~DtwImage();
 
+    DtwImage clone() const;
     QImage resize(const QSize& rect) const;
     QImage makeColoringPage(void) const;
     QImage makeColoringPage(const QSize& size) const;
@@ -43,9 +46,11 @@ public:
 #ifdef QT_DEBUG
     QImage dumpEnergy() const;
     QImage dumpImage() const;
+    QImage dumpSeams() const;
 #endif
 
 private:
+    DtwImage(const QSize&);
     DtwImagePrivate * d_ptr;
     Q_DECLARE_PRIVATE(DtwImage);
 };//class DtwImage
