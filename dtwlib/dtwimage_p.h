@@ -25,8 +25,11 @@
 
 namespace dtw {
 
-enum Neighbour { UP, RIGHT, DOWN, LEFT, UP_RIGHT, DOWN_RIGHT, DOWN_LEFT,
-                       UP_LEFT, NEIGHBOUR_LAST };
+enum Neighbour { UP, RIGHT, DOWN, LEFT,
+#ifdef DIAGONAL_NEIGHBOURS
+                 UP_RIGHT, DOWN_RIGHT, DOWN_LEFT, UP_LEFT,
+#endif
+                 NEIGHBOUR_LAST };
 typedef int index_t;
 typedef double energy_t;
 typedef QVector<index_t> Seam;
@@ -118,9 +121,13 @@ public:
     void drawSeams();
 #endif
 
-    void removeSeam(const Seam&);
+    void removeVerticalSeam(const Seam&);
+    void removeHorizontalSeam(const Seam&);
+
+    void resize(const QSize& size);
 
     energy_t energy(int x, int y) const;
+    void updateEnergy(index_t idx);
 
     energy_t dualGradientEnergy(int left, int rigth, int up, int down);
 };//struct DtwImagePrivate

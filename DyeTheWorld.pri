@@ -71,7 +71,7 @@ equals(TEMPLATE, "app") {
 }
 
 debug {
-    DEFINES += BENCH
+#    DEFINES += BENCH
 }
 
 CONFIG += c++11

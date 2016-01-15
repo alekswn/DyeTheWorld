@@ -20,7 +20,7 @@
 #include "dtwimage_p.h"
 
 #include <QDebug>
-
+#include "benchmark.h"
 
 #include <array>
 #include <cmath>
@@ -30,10 +30,13 @@ using namespace dtw;
 const QImage::Format DtwImage::DTW_FORMAT = QImage::Format_ARGB32;
 
 static const index_t INVALID_INDEX = -1;
+
+#ifdef DIAGONAL_NEIGHBOURS
 static const Directions UPPERS = { UP_LEFT, UP, UP_RIGHT };
 static const Directions LOWERS = {  DOWN_LEFT, DOWN, DOWN_RIGHT };
 static const Directions LEFTS = { UP_LEFT, LEFT, DOWN_LEFT };
 static const Directions RIGHTS = { UP_RIGHT, RIGHT, DOWN_RIGHT };
+#endif
 
 //static energy_t BORDER_ENERGY = std::numeric_limits<energy_t>::infinity();
 static energy_t BORDER_ENERGY = 1000.0;
@@ -67,9 +70,9 @@ DtwImage DtwImage::clone() const
 
 QImage DtwImage::resize(const QSize& size) const
 {
-    Q_UNUSED(size);
-    Q_D(const DtwImage);
-    return d->makeImage();
+    DtwImage tp(*this);
+    tp.d_ptr->resize(size);
+    return tp.d_ptr->makeImage();
 }
 
 QImage DtwImage::makeColoringPage(void) const
@@ -142,6 +145,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
       cells(size.height() * size.width()),
       startingCell(0)
 {
+    BENCHMARK_START();
     if (img.format() != q->DTW_FORMAT)
         img = img.convertToFormat(q->DTW_FORMAT, Qt::AutoColor);
     const int height = size.height();
@@ -163,48 +167,51 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
     {
         const int down = width;
         const int right = 1;
-        cells[0].neighbours[DOWN_LEFT] = INVALID_INDEX;
         cells[0].neighbours[LEFT] = INVALID_INDEX;
-        cells[0].neighbours[UP_LEFT] = INVALID_INDEX;
         cells[0].neighbours[UP] = INVALID_INDEX;
-        cells[0].neighbours[UP_RIGHT] = INVALID_INDEX;
         cells[0].neighbours[RIGHT] = right;
-        cells[0].neighbours[DOWN_RIGHT] = down + 1;
         cells[0].neighbours[DOWN] = down;
+#ifdef DIAGONAL_NEIGHBOURS
+        cells[0].neighbours[DOWN_LEFT] = INVALID_INDEX;
+        cells[0].neighbours[UP_LEFT] = INVALID_INDEX;
+        cells[0].neighbours[UP_RIGHT] = INVALID_INDEX;
+        cells[0].neighbours[DOWN_RIGHT] = down + 1;
+#endif
         cells[0].energy = dualGradientEnergy(0, right, 0, down);
-//        cells[0].energy = BORDER_ENERGY;
-
     }
     for (int j = 1; j < width - 1; j++)
     {
         const int down = j + width;
         const int right = j + 1;
         const int left = j - 1;
-        cells[j].neighbours[UP_LEFT] = INVALID_INDEX;
         cells[j].neighbours[UP] = INVALID_INDEX;
-        cells[j].neighbours[UP_RIGHT] = INVALID_INDEX;
         cells[j].neighbours[RIGHT] = right;
-        cells[j].neighbours[DOWN_RIGHT] = down + 1;
         cells[j].neighbours[DOWN] = down;
-        cells[j].neighbours[DOWN_LEFT] = down - 1;
         cells[j].neighbours[LEFT] = left;
+#ifdef DIAGONAL_NEIGHBOURS
+        cells[j].neighbours[UP_LEFT] = INVALID_INDEX;
+        cells[j].neighbours[UP_RIGHT] = INVALID_INDEX;
+        cells[j].neighbours[DOWN_RIGHT] = down + 1;
+        cells[j].neighbours[DOWN_LEFT] = down - 1;
+#endif
+
         cells[j].energy = dualGradientEnergy(left, right, j, down);
-//        cells[j].energy = BORDER_ENERGY;
     }
     {
         int k = width - 1;
         const int down = k + width;;
         const int left = k - 1;
-        cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
         cells[k].neighbours[UP] = INVALID_INDEX;
-        cells[k].neighbours[UP_RIGHT] = INVALID_INDEX;
         cells[k].neighbours[RIGHT] = INVALID_INDEX;
-        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
         cells[k].neighbours[DOWN] = down;
-        cells[k].neighbours[DOWN_LEFT] = down - 1;
         cells[k].neighbours[LEFT] = left;
+#ifdef DIAGONAL_NEIGHBOURS
+        cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[UP_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_LEFT] = down - 1;
+#endif
         cells[k].energy = dualGradientEnergy( left, k, k, down );
-//        cells[k].energy = BORDER_ENERGY;
     }
     int k = width;
     for (int i = 1; i < height - 1; i++) {
@@ -212,16 +219,17 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
             const int up = k - width;
             const int down = k + width;
             const int right = k + 1;
-            cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
             cells[k].neighbours[LEFT] = INVALID_INDEX;
-            cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
             cells[k].neighbours[UP] = up;
-            cells[k].neighbours[UP_RIGHT] = up + 1;
             cells[k].neighbours[RIGHT] = right;
-            cells[k].neighbours[DOWN_RIGHT] = down + 1;
             cells[k].neighbours[DOWN] = down;
+#ifdef DIAGONAL_NEIGHBOURS
+            cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+            cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
+            cells[k].neighbours[DOWN_RIGHT] = down + 1;
+            cells[k].neighbours[UP_RIGHT] = up + 1;
+#endif
             cells[k].energy = dualGradientEnergy( k, right, up, down );
-//            cells[k].energy = BORDER_ENERGY;
             k++;
         }
         for (int j = 1; j < width - 1; j++)
@@ -230,14 +238,16 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
             const int down = k + width;
             const int left = k - 1;
             const int right = k + 1;
-            cells[k].neighbours[UP_LEFT] = up - 1;
             cells[k].neighbours[UP] = up;
-            cells[k].neighbours[UP_RIGHT] = up + 1;
             cells[k].neighbours[RIGHT] = right;
-            cells[k].neighbours[DOWN_RIGHT] = down + 1;
             cells[k].neighbours[DOWN] = down;
-            cells[k].neighbours[DOWN_LEFT] = down - 1;
             cells[k].neighbours[LEFT] = left;
+#ifdef DIAGONAL_NEIGHBOURS
+            cells[k].neighbours[UP_LEFT] = up - 1;
+            cells[k].neighbours[UP_RIGHT] = up + 1;
+            cells[k].neighbours[DOWN_RIGHT] = down + 1;
+            cells[k].neighbours[DOWN_LEFT] = down - 1;
+#endif
             cells[k].energy = dualGradientEnergy( left, right, up, down );
             k++;
         }
@@ -245,32 +255,34 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
             const int up = k - width;
             const int down = k + width;
             const int left = k - 1;
-            cells[k].neighbours[UP_LEFT] =  up - 1;
             cells[k].neighbours[UP] =  up;
-            cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
             cells[k].neighbours[RIGHT] = INVALID_INDEX;
-            cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
             cells[k].neighbours[DOWN] = down;
-            cells[k].neighbours[DOWN_LEFT] = down - 1;
             cells[k].neighbours[LEFT] = left;
+#ifdef DIAGONAL_NEIGHBOURS
+            cells[k].neighbours[UP_LEFT] =  up - 1;
+            cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
+            cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+            cells[k].neighbours[DOWN_LEFT] = down - 1;
+#endif
             cells[k].energy = dualGradientEnergy( left, k, up, down );
-            //cells[k].energy = BORDER_ENERGY;
             k++;
         }
     }
     {
         const int up = k - width;
         const int right = k + 1;
-        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
         cells[k].neighbours[LEFT] = INVALID_INDEX;
-        cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
         cells[k].neighbours[UP] = up;
-        cells[k].neighbours[UP_RIGHT] = up + 1;
         cells[k].neighbours[RIGHT] = right;
-        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
         cells[k].neighbours[DOWN] = INVALID_INDEX;
+#ifdef DIAGONAL_NEIGHBOURS
+        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[UP_LEFT] = INVALID_INDEX;
+        cells[k].neighbours[UP_RIGHT] = up + 1;
+        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+#endif
         cells[k].energy = dualGradientEnergy( k, right, up, k );
-        //cells[k].energy = BORDER_ENERGY;
         k++;
     }
     for (int j = 1; j < width - 1; j++)
@@ -278,38 +290,66 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
         const int up = k - width;
         const int left = k - 1;
         const int right = k + 1;
-        cells[k].neighbours[UP_LEFT] = up - 1;
         cells[k].neighbours[UP] = up;
-        cells[k].neighbours[UP_RIGHT] = up + 1;
         cells[k].neighbours[RIGHT] = right;
-        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
         cells[k].neighbours[DOWN] = INVALID_INDEX;
-        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
         cells[k].neighbours[LEFT] = left;
+#ifdef DIAGONAL_NEIGHBOURS
+        cells[k].neighbours[UP_LEFT] = up - 1;
+        cells[k].neighbours[UP_RIGHT] = up + 1;
+        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+#endif
         cells[k].energy = dualGradientEnergy( left, right, up, k );
-        //cells[k].energy = BORDER_ENERGY;
         k++;
     }
     {
         const int up = k - width;
         const int left = k - 1;
-        cells[k].neighbours[UP_LEFT] =  up - 1;
         cells[k].neighbours[UP] =  up;
-        cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
         cells[k].neighbours[RIGHT] = INVALID_INDEX;
-        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
         cells[k].neighbours[DOWN] = INVALID_INDEX;
-        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
         cells[k].neighbours[LEFT] = left;
+#ifdef DIAGONAL_NEIGHBOURS
+        cells[k].neighbours[UP_LEFT] =  up - 1;
+        cells[k].neighbours[UP_RIGHT] =  INVALID_INDEX;
+        cells[k].neighbours[DOWN_RIGHT] = INVALID_INDEX;
+        cells[k].neighbours[DOWN_LEFT] = INVALID_INDEX;
+#endif
         cells[k].energy = dualGradientEnergy( left, k, up, k );
-        //cells[k].energy = BORDER_ENERGY;
     }
     Q_ASSERT(++k == cells.size());
+    BENCHMARK_STOP();
 }
 
 QImage DtwImagePrivate::makeImage() const
 {
-    return QImage();
+    BENCHMARK_START();
+    int k = startingCell;
+
+    if (k == INVALID_INDEX) return QImage();
+
+    Q_ASSERT(cells[k].neighbours[UP] < 0
+             && cells[k].neighbours[LEFT] < 0);
+
+    const int height = size.height();
+    const int width = size.width();
+
+    QImage image(size, DtwImage::DTW_FORMAT);
+    for (int i = 0; i < height; i++) {
+        QRgb * line = reinterpret_cast<QRgb *>(image.scanLine(i));
+        const int nextLineStart = cells[k].neighbours[DOWN];
+        for (int j = 0; j < width; j++) {
+            Q_ASSERT(k >= 0 && k < cells.size());
+            line[j] = colors[k];
+            k = cells[k].neighbours[RIGHT];
+        }
+        Q_ASSERT(k < 0);
+        k = nextLineStart;
+    }
+    Q_ASSERT(k < 0);
+    BENCHMARK_STOP();
+    return image;
 }
 
 #ifdef QT_DEBUG
@@ -339,34 +379,7 @@ QImage DtwImage::dumpEnergy() const {
 
 QImage DtwImage::dumpImage() const {
     Q_D(const DtwImage);
-    int k = 0;
-    do {
-        if (k >= d->cells.size()) return QImage();
-        if (!std::isnan(d->cells[k].energy)) break;
-        k++;
-    } while(true);
-
-    Q_ASSERT(d->cells[k].neighbours[UP] < 0
-             && d->cells[k].neighbours[LEFT] < 0);
-
-    const int height = d->size.height();
-    const int width = d->size.width();
-
-    QImage image(d->size, DTW_FORMAT);
-    for (int i = 0; i < height; i++) {
-        QRgb * line = reinterpret_cast<QRgb *>(image.scanLine(i));
-        const int nextLineStart = d->cells[k].neighbours[DOWN];
-        for (int j = 0; j < width; j++) {
-            Q_ASSERT(k >= 0 && k < d->cells.size());
-            line[j] = d->colors[k];
-            k = d->cells[k].neighbours[RIGHT];
-        }
-        Q_ASSERT(k < 0);
-        k = nextLineStart;
-    }
-    Q_ASSERT(k < 0);
-
-    return image;
+    return d->makeImage();
 }
 #endif
 
@@ -374,6 +387,20 @@ energy_t DtwImagePrivate::energy(int x, int y) const {
     const int k = y*size.width() + x;
     Q_ASSERT(k>=0 && k < cells.size());
     return cells[k].energy;
+}
+
+void DtwImagePrivate::updateEnergy(index_t idx) {
+    Q_ASSERT(idx >= 0 && idx < cells.size());
+    const index_t left = (cells[idx].neighbours[LEFT] == INVALID_INDEX) ? idx
+                             : cells[idx].neighbours[LEFT];
+    const index_t right = (cells[idx].neighbours[RIGHT] == INVALID_INDEX) ? idx
+                             : cells[idx].neighbours[RIGHT];
+    const index_t up = (cells[idx].neighbours[UP] == INVALID_INDEX) ? idx
+                             : cells[idx].neighbours[UP];
+    const index_t down = (cells[idx].neighbours[DOWN] == INVALID_INDEX) ? idx
+                             : cells[idx].neighbours[DOWN];
+
+    cells[idx].energy = dualGradientEnergy(left,right,up,down);
 }
 
 /////////////////////////////Seam operations///////////////////////////////////
@@ -394,6 +421,7 @@ index_t DtwImagePrivate::SeamLayer::getMinPathEdge() const {
 
 void DtwImagePrivate::findSeamHelper(Seam& seam, SeamLayer&& firstLayer,
                                      const Neighbour dir, size_t length) const {
+    BENCHMARK_START();
     Q_ASSERT(!seam.isEmpty());
     QList<SeamLayer*> layers;
     const int layerCapacity = firstLayer.size();
@@ -446,6 +474,7 @@ void DtwImagePrivate::findSeamHelper(Seam& seam, SeamLayer&& firstLayer,
         delete lastLayer;
     } while (seamIt != seam.begin());
     Q_ASSERT(layers.isEmpty());
+    BENCHMARK_STOP();
 }
 
 Seam DtwImagePrivate::findVerticalSeam() const {
@@ -491,3 +520,98 @@ void DtwImagePrivate::drawSeams() {
 
 }
 #endif
+
+void DtwImagePrivate::removeHorizontalSeam(const Seam& seam) {
+#ifdef DIAGONAL_NEIGHBOURS
+#error "removeSeam() unable to handle diagonal neighbours"
+#endif
+    BENCHMARK_START();
+    //Update starting cell
+    index_t idx = seam.front();
+    if(idx == startingCell) startingCell = cells[idx].neighbours[DOWN];
+
+    //Sew cells
+    for(int i = 0;;) {
+        const index_t up  = cells[idx].neighbours[UP];
+        const index_t down = cells[idx].neighbours[DOWN];
+        const index_t right = cells[idx].neighbours[RIGHT];
+        if(up != INVALID_INDEX) cells[up].neighbours[DOWN] = down;
+        if(down != INVALID_INDEX) cells[down].neighbours[UP] = up;
+        if(right == INVALID_INDEX) break;
+        idx = seam[++i];
+        if(idx != right) {
+            const index_t right_up = cells[right].neighbours[UP];
+            if (idx == right_up) {
+                cells[right].neighbours[LEFT] = up;
+                cells[up].neighbours[RIGHT] = right;
+            } else {
+                Q_ASSERT (idx == cells[right].neighbours[DOWN]);
+                cells[right].neighbours[LEFT] = down;
+                cells[down].neighbours[RIGHT] = right;
+            }
+        }
+    }
+    size.rheight()--;
+    BENCHMARK_STOP();
+}
+
+void DtwImagePrivate::removeVerticalSeam(const Seam& seam) {
+#ifdef DIAGONAL_NEIGHBOURS
+#error "removeSeam() unable to handle diagonal neighbours"
+#endif
+    BENCHMARK_START();
+    //Update starting cell
+    index_t idx = seam.front();
+    if(idx == startingCell) startingCell = cells[idx].neighbours[RIGHT];
+
+    //Sew cells and update energy
+    for(int i = 0;;) {
+        const index_t left = cells[idx].neighbours[LEFT];
+        const index_t right = cells[idx].neighbours[RIGHT];
+        const index_t down = cells[idx].neighbours[DOWN];
+        if(left != INVALID_INDEX) {
+            cells[left].neighbours[RIGHT] = right;
+            updateEnergy(left);
+        }
+        if(right != INVALID_INDEX) {
+            cells[right].neighbours[LEFT] = left;
+            updateEnergy(right);
+        }
+        if(down == INVALID_INDEX) break;
+        idx = seam[++i];
+        if(idx != down) {
+            const index_t down_left = cells[down].neighbours[LEFT];
+            if (idx == down_left) {
+                cells[down].neighbours[UP] = left;
+                cells[left].neighbours[DOWN] = down;
+                updateEnergy(left);
+            } else {
+                Q_ASSERT (idx == cells[down].neighbours[RIGHT]);
+                cells[down].neighbours[UP] = right;
+                cells[right].neighbours[DOWN] = down;
+                updateEnergy(right);
+            }
+            updateEnergy(down);
+        }
+    }
+    size.rwidth()--;
+    BENCHMARK_STOP();
+}
+
+void DtwImagePrivate::resize(const QSize& newSize) {
+    const QSize deltaSize = newSize - size;
+    int dh = deltaSize.height();
+    int dw = deltaSize.width();
+    if ( dh > 0 || dw > 0) {
+        qWarning() << "Scaling up is not implemented yet";
+    }
+
+    while(dw++ < 0) {
+        removeVerticalSeam(findVerticalSeam());
+    }
+
+    while(dh++ < 0) {
+        removeHorizontalSeam(findHorizontalSeam());
+    }
+
+}
