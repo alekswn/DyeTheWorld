@@ -1,4 +1,4 @@
 SUBDIRS += \
           "UnitTests" \
-          "FrontEnds/CUI"
-
+          "FrontEnds/CUI" \
+          "FrontEnds/WUI"

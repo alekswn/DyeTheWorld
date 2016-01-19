@@ -43,8 +43,9 @@ static const Directions RIGHTS = { UP_RIGHT, RIGHT, DOWN_RIGHT };
 
 //static energy_t BORDER_ENERGY = std::numeric_limits<energy_t>::infinity();
 static energy_t BORDER_ENERGY = 1000.0;
-//static energy_t DELETED_ENERGY = std::nan("DELETED");
-
+#ifdef QT_DEBUG
+static energy_t DELETED_ENERGY = std::nan("DELETED");
+#endif
 DtwImage::DtwImage(const QSize& size) : d_ptr(new DtwImagePrivate(this, size))
 {
     Q_D(DtwImage);
