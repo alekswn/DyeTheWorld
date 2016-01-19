@@ -43,7 +43,7 @@ static const Directions RIGHTS = { UP_RIGHT, RIGHT, DOWN_RIGHT };
 
 //static energy_t BORDER_ENERGY = std::numeric_limits<energy_t>::infinity();
 static energy_t BORDER_ENERGY = 1000.0;
-static energy_t DELETED_ENERGY = std::nan("DELETED");
+//static energy_t DELETED_ENERGY = std::nan("DELETED");
 
 DtwImage::DtwImage(const QSize& size) : d_ptr(new DtwImagePrivate(this, size))
 {
@@ -420,8 +420,9 @@ energy_t DtwImagePrivate::getThresholdEnergy(int ratio) const {
         energies.append(cell.energy);
     qSort(energies);
     energy_t threshold = energies[NM - NM/ratio];
-
+#ifdef QT_DEBUG
     qDebug() << "Threshold energy:" << threshold;
+#endif
     return threshold;
 }
 

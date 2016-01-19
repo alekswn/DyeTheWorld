@@ -35,6 +35,11 @@ int main(int argc, char *argv[])
     parser.addPositionalArgument("source", QCoreApplication::translate("main", "Source image file name"));
     parser.addPositionalArgument("destination", QCoreApplication::translate("main", "Destination image file name"));
 
+    QCommandLineOption detailsOption ( QStringList() << "d" << "details",
+                                       QCoreApplication::translate("main", "detalization level"),
+                                       "details", "0" );
+    parser.addOption(detailsOption);
+
     // Process the actual command line arguments given by the user
     parser.process(app);
 
@@ -44,6 +49,8 @@ int main(int argc, char *argv[])
     //If the number of arguments is incorrect show help and exit
     if (args.size()!=2) parser.showHelp(1);
 
+    int details = parser.value(detailsOption).toInt();
+
     QImage img;
     if (!img.load(args.at(0)))
     {
@@ -52,6 +59,6 @@ int main(int argc, char *argv[])
     }
 
     dtw::DtwImage dtwImage(img);
-    dtwImage.makeColoringPage().save(args.at(1));
+    dtwImage.makeColoringPage(details).save(args.at(1));
 
 }
