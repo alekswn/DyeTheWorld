@@ -40,14 +40,15 @@ public:
 
     DtwImage clone() const;
     QImage resize(const QSize& rect) const;
-    QImage makeColoringPage(void) const;
-    QImage makeColoringPage(const QSize& size) const;
+    QImage makeColoringPage(int detailRatio = 0) const;
+    QImage makeColoringPage(int detailRatio, const QSize& size) const;
 
 #ifdef QT_DEBUG
     QImage dumpEnergy() const;
     QImage dumpImage() const;
     QImage dumpSeams() const;
     QImage dumpTopContour() const;
+    QImage dumpHighEnergy() const;
 #endif
 
 private:

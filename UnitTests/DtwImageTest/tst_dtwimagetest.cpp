@@ -44,7 +44,7 @@ private Q_SLOTS:
 #ifdef QT_DEBUG
     void dumpEnergyTestCase();
     void dumpSeamsTestCase();
-    void drawContourTestCase();
+    void dumpHighEnergyTestCase();
 #endif
 
     void decreaseWidthTestCase();
@@ -95,8 +95,8 @@ void dtwImageTest::dumpSeamsTestCase() {
     QVERIFY(dtwImage->dumpSeams().save("seams.bmp"));
 }
 
-void dtwImageTest::drawContourTestCase() {
-    QVERIFY(dtwImage->dumpTopContour().save("contour.bmp"));
+void dtwImageTest::dumpHighEnergyTestCase() {
+    QVERIFY(dtwImage->dumpHighEnergy().save("high_energy.bmp"));
 }
 
 #endif

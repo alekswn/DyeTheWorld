@@ -32,6 +32,7 @@ using namespace dtw;
 const QImage::Format DtwImage::DTW_FORMAT = QImage::Format_ARGB32;
 
 static const index_t INVALID_INDEX = -1;
+static const int DEF_CONTOUR_RATIO = 20;
 
 #ifdef DIAGONAL_NEIGHBOURS
 static const Directions UPPERS = { UP_LEFT, UP, UP_RIGHT };
@@ -77,17 +78,16 @@ QImage DtwImage::resize(const QSize& size) const
     return tp.d_ptr->makeImage();
 }
 
-QImage DtwImage::makeColoringPage(void) const
+QImage DtwImage::makeColoringPage(int detailRatio) const
 {
     Q_D(const DtwImage);
-    return d->makeImage();
+    if (detailRatio <= 0) detailRatio = DEF_CONTOUR_RATIO;
+    return d->makeHighEnergyImage(detailRatio);
 }
 
-QImage DtwImage::makeColoringPage(const QSize& size) const
+QImage DtwImage::makeColoringPage(int detailRatio, const QSize& size) const
 {
-    Q_UNUSED(size);
-    Q_D(const DtwImage);
-    return d->makeImage();
+    return makeColoringPage(detailRatio).scaled(size);
 }
 
 DtwImagePrivate::Cell::Cell()
@@ -121,10 +121,16 @@ energy_t DtwImagePrivate::dualGradientEnergy(int left, int right, int up, int do
     const int dGy  = GpY - GsY;
     const int dBy  = BpY - BsY;
 
-    const int Dx2  = dRx*dRx + dGx*dGx + dBx*dBx;
-    const int Dy2  = dRy*dRy + dGy*dGy + dBy*dBy;
+    const energy_t Dx2  = dRx*dRx + dGx*dGx + dBx*dBx;
+    const energy_t Dy2  = dRy*dRy + dGy*dGy + dBy*dBy;
 
     return std::sqrt(Dx2 + Dy2);
+/*
+    const energy_t xBase = right - left;
+    const energy_t yBase = down - up;
+
+    return std::sqrt(Dx2/xBase/xBase + Dy2/yBase/yBase);
+*/
 }
 
 DtwImagePrivate::DtwImagePrivate(DtwImage *q, const QSize& size)
@@ -322,6 +328,21 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
     BENCHMARK_STOP();
 }
 
+QImage DtwImagePrivate::makeHighEnergyImage(int ratio) const
+{
+    const energy_t threshold = getThresholdEnergy(ratio);
+    QImage energyImage = QImage(size, QImage::Format_Grayscale8);
+    const int width =  size.width() - 1;
+    const int height = size.height() - 1;
+    for (int j = 0; j < height; j++) {
+        uchar * line = energyImage.scanLine(j);
+        for (int i = 1; i < width - 1; i++) {
+            line[i] = (energy(i,j) > threshold) ? 0 : 255;
+        }
+    }
+    return energyImage;
+}
+
 QImage DtwImagePrivate::makeImage() const
 {
     BENCHMARK_START();
@@ -374,14 +395,35 @@ QImage DtwImage::dumpEnergy() const {
             line[i] = energyArr[i][j]*scaleFactor;
         }
     }
+    qInfo() << "Max energy:" << maxEnergy;
     return energyImage;
+}
+
+QImage DtwImage::dumpHighEnergy() const {
+    Q_D(const DtwImage);
+    return d->makeHighEnergyImage(DEF_CONTOUR_RATIO);
 }
 
 QImage DtwImage::dumpImage() const {
     Q_D(const DtwImage);
     return d->makeImage();
 }
+
+
 #endif
+
+energy_t DtwImagePrivate::getThresholdEnergy(int ratio) const {
+    //create a sorted array
+    QList<energy_t> energies;
+    energies.reserve(NM);
+    foreach(const Cell& cell, cells)
+        energies.append(cell.energy);
+    qSort(energies);
+    energy_t threshold = energies[NM - NM/ratio];
+
+    qDebug() << "Threshold energy:" << threshold;
+    return threshold;
+}
 
 energy_t DtwImagePrivate::energy(int x, int y) const {
     const int k = y*size.width() + x;
@@ -391,15 +433,23 @@ energy_t DtwImagePrivate::energy(int x, int y) const {
 
 void DtwImagePrivate::updateEnergy(index_t idx) {
     Q_ASSERT(idx >= 0 && idx < NM);
-    const index_t left = (cells[idx].neighbours[LEFT] == INVALID_INDEX) ? idx
-                             : cells[idx].neighbours[LEFT];
-    const index_t right = (cells[idx].neighbours[RIGHT] == INVALID_INDEX) ? idx
-                             : cells[idx].neighbours[RIGHT];
-    const index_t up = (cells[idx].neighbours[UP] == INVALID_INDEX) ? idx
-                             : cells[idx].neighbours[UP];
-    const index_t down = (cells[idx].neighbours[DOWN] == INVALID_INDEX) ? idx
-                             : cells[idx].neighbours[DOWN];
+    index_t left =  cells[idx].neighbours[LEFT];
+    index_t right = cells[idx].neighbours[RIGHT];
+    index_t up = cells[idx].neighbours[UP];
+    index_t down = cells[idx].neighbours[DOWN];
 
+    if (left == INVALID_INDEX) {
+        left = idx;
+    }
+    if (right == INVALID_INDEX) {
+        right = idx;
+    }
+    if (up == INVALID_INDEX) {
+        up = idx;
+    }
+    if (down == INVALID_INDEX) {
+        down = idx;
+    }
     cells[idx].energy = dualGradientEnergy(left,right,up,down);
 }
 

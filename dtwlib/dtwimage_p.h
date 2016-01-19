@@ -128,6 +128,7 @@ public:
     DtwImagePrivate(DtwImage *q, const QSize& size);
 
     QImage makeImage() const;
+    QImage makeHighEnergyImage(int detailRatio) const;
 
     Seam findVerticalSeam() const;
     Seam findHorizontalSeam() const;
@@ -149,6 +150,7 @@ public:
 
     energy_t energy(int x, int y) const;
     void updateEnergy(index_t idx);
+    energy_t getThresholdEnergy(int ratio) const;
 
     energy_t dualGradientEnergy(int left, int rigth, int up, int down);
 };//struct DtwImagePrivate
