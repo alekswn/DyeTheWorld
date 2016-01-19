@@ -47,6 +47,7 @@ public:
     QImage dumpEnergy() const;
     QImage dumpImage() const;
     QImage dumpSeams() const;
+    QImage dumpTopContour() const;
 #endif
 
 private:

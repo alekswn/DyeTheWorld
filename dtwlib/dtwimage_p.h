@@ -32,7 +32,7 @@ enum Neighbour { UP, RIGHT, DOWN, LEFT,
                  NEIGHBOUR_LAST };
 typedef int index_t;
 typedef double energy_t;
-typedef QVector<index_t> Seam;
+typedef QList<index_t> Seam;
 typedef std::array<Neighbour, 3> Directions;
 
 class DtwImagePrivate
@@ -45,6 +45,7 @@ struct Cell {
     };
 
 class SeamLayer {
+protected:
     QVector<index_t> indexes;
     QVector<index_t> edgeTo;
     QVector<energy_t> distTo;
@@ -60,8 +61,14 @@ public:
         : indexes(r.indexes), edgeTo(r.edgeTo), distTo(r.distTo) //We relay on Qt's "copy on write"
     { }
 
+    void squeeze() { //Free excessive memory
+        indexes.squeeze();
+        edgeTo.squeeze();
+        distTo.squeeze();
+    }
+
+
     void add(index_t i, index_t g, energy_t d) {
-        Q_ASSERT(edgeTo.size() < edgeTo.capacity());
         indexes.append(i);
         edgeTo.append(g);
         distTo.append(d);
@@ -71,6 +78,14 @@ public:
         if (d < distTo.back()) {
             edgeTo.back() = g;
             distTo.back() = d;
+        }
+    }
+
+    void relax(index_t i, index_t g, energy_t d, index_t from) {
+        if (d < distTo[i]) {
+            edgeTo[i] = g;
+            distTo[i] = d;
+            indexes[i] = from;
         }
     }
 
@@ -103,6 +118,7 @@ public:
     Q_DECLARE_PUBLIC(DtwImage)
 
     QSize size;
+    int NM;
     QVector<QRgb> colors;
     QVector<Cell> cells;
     index_t startingCell;
@@ -115,14 +131,19 @@ public:
 
     Seam findVerticalSeam() const;
     Seam findHorizontalSeam() const;
-    void findSeamHelper(Seam& seam, SeamLayer&& firstLayer, const Neighbour dir, size_t length) const;
+    Seam findSeamHelper(SeamLayer&& firstLayer, const Neighbour dir, int length) const;
+
+    QList<Seam> findAllCountours( int minLength = 0, energy_t minEnergy = 0.0 );
+    QPair<Seam, energy_t>  findContour(index_t start, int minLength = 3);
 
 #ifdef QT_DEBUG
     void drawSeams();
+    void drawTopContour();
 #endif
 
     void removeVerticalSeam(const Seam&);
     void removeHorizontalSeam(const Seam&);
+    void removeContour(const Seam&);
 
     void resize(const QSize& size);
 

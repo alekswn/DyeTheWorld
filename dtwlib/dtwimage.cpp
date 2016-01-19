@@ -19,6 +19,8 @@
 #include "dtwimage.h"
 #include "dtwimage_p.h"
 
+#include <QQueue>
+
 #include <QDebug>
 #include "benchmark.h"
 
@@ -126,23 +128,21 @@ energy_t DtwImagePrivate::dualGradientEnergy(int left, int right, int up, int do
 }
 
 DtwImagePrivate::DtwImagePrivate(DtwImage *q, const QSize& size)
-: q_ptr(q), size(size),
-  colors(size.height() * size.width()),
-  cells(size.height() * size.width()),
+: q_ptr(q), size(size), NM(size.height() * size.width()),
+  colors(NM), cells(NM),
   startingCell(INVALID_INDEX)
 {}
 
 DtwImagePrivate::DtwImagePrivate(DtwImage *q, const DtwImagePrivate* r)
-: q_ptr(q), size(r->size),
+: q_ptr(q), size(r->size), NM(r->NM),
   colors(r->colors), cells(r->cells),
   startingCell(r->startingCell)
 {}
 
 
 DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
-    : q_ptr(q), size(img.size()),
-      colors(size.height() * size.width()),
-      cells(size.height() * size.width()),
+    : q_ptr(q), size(img.size()), NM(size.height() * size.width()),
+      colors(NM), cells(NM),
       startingCell(0)
 {
     BENCHMARK_START();
@@ -318,7 +318,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
 #endif
         cells[k].energy = dualGradientEnergy( left, k, up, k );
     }
-    Q_ASSERT(++k == cells.size());
+    Q_ASSERT(++k == NM);
     BENCHMARK_STOP();
 }
 
@@ -385,12 +385,12 @@ QImage DtwImage::dumpImage() const {
 
 energy_t DtwImagePrivate::energy(int x, int y) const {
     const int k = y*size.width() + x;
-    Q_ASSERT(k>=0 && k < cells.size());
+    Q_ASSERT(k>=0 && k < NM);
     return cells[k].energy;
 }
 
 void DtwImagePrivate::updateEnergy(index_t idx) {
-    Q_ASSERT(idx >= 0 && idx < cells.size());
+    Q_ASSERT(idx >= 0 && idx < NM);
     const index_t left = (cells[idx].neighbours[LEFT] == INVALID_INDEX) ? idx
                              : cells[idx].neighbours[LEFT];
     const index_t right = (cells[idx].neighbours[RIGHT] == INVALID_INDEX) ? idx
@@ -419,15 +419,13 @@ index_t DtwImagePrivate::SeamLayer::getMinPathEdge() const {
     return minEdge;
 }
 
-void DtwImagePrivate::findSeamHelper(Seam& seam, SeamLayer&& firstLayer,
-                                     const Neighbour dir, size_t length) const {
+Seam DtwImagePrivate::findSeamHelper(SeamLayer&& firstLayer,
+                                     const Neighbour dir, int length) const {
     BENCHMARK_START();
-    Q_ASSERT(!seam.isEmpty());
     QList<SeamLayer*> layers;
     const int layerCapacity = firstLayer.size();
     Q_ASSERT(layerCapacity > 1);
 
-    seam.reserve(length);
     layers.reserve(length);
 
     SeamLayer* currentLayer = new SeamLayer(firstLayer);
@@ -461,44 +459,38 @@ void DtwImagePrivate::findSeamHelper(Seam& seam, SeamLayer&& firstLayer,
         layers.append(currentLayer);
         currentLayer = nextLayer;
     }
-    Q_ASSERT(seam.size() == layers.size() + 1);
 
     //Traverse minimal path
     index_t minPathEdge = currentLayer->getMinPathEdge();
-    auto seamIt = seam.end();
-    *(--seamIt) = currentLayer->index(minPathEdge);
+    Seam seam;
+    seam.reserve(length);
+    seam.prepend(currentLayer->index(minPathEdge));
     do {
         SeamLayer * lastLayer = layers.takeLast();
         minPathEdge = lastLayer->edge(minPathEdge);
-        *(--seamIt) = lastLayer->index(minPathEdge);
+        seam.prepend(lastLayer->index(minPathEdge));
         delete lastLayer;
-    } while (seamIt != seam.begin());
-    Q_ASSERT(layers.isEmpty());
+    } while (!layers.isEmpty());
     BENCHMARK_STOP();
+    return seam;
 }
 
 Seam DtwImagePrivate::findVerticalSeam() const {
-    Seam seam(size.height(), INVALID_INDEX);
     SeamLayer firstLayer(size.width());
     index_t g = 0;
     for (index_t i = startingCell; i != INVALID_INDEX; i = cells[i].neighbours[RIGHT])
         firstLayer.add(i, g++, cells[i].energy);
     Q_ASSERT(firstLayer.size() == size.width());
-    findSeamHelper(seam, std::move(firstLayer), DOWN, size.height());
-    Q_ASSERT(seam.size() == size.height());
-    return seam;
+    return findSeamHelper(std::move(firstLayer), DOWN, size.height());
 }
 
 Seam DtwImagePrivate::findHorizontalSeam() const {
-    Seam seam(size.width(), INVALID_INDEX);
     SeamLayer firstLayer(size.height());
     index_t g = 0;
     for (index_t i = startingCell; i != INVALID_INDEX; i = cells[i].neighbours[DOWN])
         firstLayer.add(i, g++, cells[i].energy);
     Q_ASSERT(firstLayer.size() == size.height());
-    findSeamHelper(seam, std::move(firstLayer), RIGHT, size.width());
-    Q_ASSERT(seam.size() == size.width());
-    return seam;
+    return findSeamHelper(std::move(firstLayer), RIGHT, size.width());
 }
 
 #ifdef QT_DEBUG
@@ -519,6 +511,22 @@ void DtwImagePrivate::drawSeams() {
     }
 
 }
+
+void DtwImagePrivate::drawTopContour() {
+    QPair<Seam, energy_t> contour = findContour(startingCell);
+    qInfo() << __PRETTY_FUNCTION__ << " : The top contour has energy " << contour.second;
+    foreach (index_t idx, contour.first) {
+        colors[idx] = Qt::green;
+    }
+}
+
+
+QImage DtwImage::dumpTopContour() const {
+    DtwImage tmp(*this);
+    tmp.d_ptr->drawTopContour();
+    return tmp.dumpImage();
+}
+
 #endif
 
 void DtwImagePrivate::removeHorizontalSeam(const Seam& seam) {
@@ -566,6 +574,11 @@ void DtwImagePrivate::removeVerticalSeam(const Seam& seam) {
 
     //Sew cells and update energy
     for(int i = 0;;) {
+#ifdef QT_DEBUG
+        //Ensure the cell was not deleted yet and mark it as deleted
+        Q_ASSERT(!std::isnan(cells[idx].energy));
+        cells[idx].energy = DELETED_ENERGY;
+#endif
         const index_t left = cells[idx].neighbours[LEFT];
         const index_t right = cells[idx].neighbours[RIGHT];
         const index_t down = cells[idx].neighbours[DOWN];
@@ -578,7 +591,7 @@ void DtwImagePrivate::removeVerticalSeam(const Seam& seam) {
             updateEnergy(right);
         }
         if(down == INVALID_INDEX) break;
-        idx = seam[++i];
+        idx = seam[++i]; // Get next index from the seam
         if(idx != down) {
             const index_t down_left = cells[down].neighbours[LEFT];
             if (idx == down_left) {
@@ -615,3 +628,75 @@ void DtwImagePrivate::resize(const QSize& newSize) {
     }
 
 }
+
+////////////////////////////  Contour operations //////////////////////////////
+
+QPair<Seam, energy_t> DtwImagePrivate::findContour(index_t start, int minLength) {
+    Q_ASSERT(start > INVALID_INDEX && minLength > 1);
+    BENCHMARK_START();
+
+    //Fill in the first layer with BFS
+    SeamLayer currentLayer(NM); //TODO: It's resonable to reserve less memory here.
+    QQueue<index_t> queue;
+    QVector<bool> visited(NM, false);
+    queue.enqueue(start);
+    visited[start] = true;
+    while(!queue.empty()) {
+        index_t idx = queue.dequeue();
+        currentLayer.add(idx, INVALID_INDEX, -cells[idx].energy);
+        std::for_each(cells[idx].neighbours.begin(), cells[idx].neighbours.end(),
+                     [&](index_t i) mutable {
+                        if(i != INVALID_INDEX && !visited[i]) {
+                            queue.enqueue(i);
+                            visited[i] = true;
+                        }});
+    }
+    //TODO: perhaps need to do squeeze() here
+    //Iterate throught the layers till the end
+    QList <SeamLayer> layers;
+    const int layerSize = currentLayer.size();
+    Q_ASSERT(layerSize == NM);
+    Seam candidateSeam;
+    energy_t candidateEnergy = 0.0;
+
+    for (int n = 0; n < layerSize; n++) {
+        qInfo() << n << " level";
+        SeamLayer nextLayer(currentLayer);
+        for (int idx = 0; idx < layerSize; idx++) {
+            const Cell& cell = cells[idx];
+            std::for_each(cell.neighbours.begin(), cell.neighbours.end(),
+                         [&](index_t i) mutable {
+                            if (i != INVALID_INDEX) {
+                                const index_t from = currentLayer.index(idx);
+                                const energy_t energy = currentLayer.dist(idx) - cells[i].energy; //negative
+                                if (i == idx) { //cycle found
+                                    qInfo() << "Cycle found";
+                                    if (n > minLength && energy < candidateEnergy) { //energy is stored as negative
+                                        candidateEnergy = energy;
+                                        //make candidate seam
+                                        candidateSeam.clear();
+                                        candidateSeam.reserve(n);
+                                        candidateSeam.prepend(idx);
+                                        index_t edgeTo = currentLayer.edge(idx);
+                                        auto it = layers.end();
+                                        while ( it-- != layers.begin()) {
+                                            qInfo() << "Candidate found";
+                                            candidateSeam.prepend(edgeTo);
+                                            edgeTo = it->edge(edgeTo);
+                                            Q_ASSERT(edgeTo != INVALID_INDEX);
+                                        }
+                                        Q_ASSERT(edgeTo == INVALID_INDEX);
+                                    }
+                                } else {
+                                    nextLayer.relax(i, idx, energy, from);
+                                }
+                            }});
+        }
+        layers.append(currentLayer);
+        currentLayer = nextLayer;
+     }
+
+    BENCHMARK_STOP();
+    return QPair<Seam, energy_t>(candidateSeam, -candidateEnergy);
+}
+
