@@ -82,8 +82,8 @@ QImage DtwImage::resize(const QSize& size) const
 QImage DtwImage::makeColoringPage(int detailPercent) const
 {
     Q_D(const DtwImage);
-    int detailRatio = (detailPercent > 0 && detailPercent <= 100)
-                    ? (100 / detailPercent) : DEF_CONTOUR_RATIO;
+    float detailRatio = (detailPercent > 0 && detailPercent <= 100)
+                      ? (100.0 / detailPercent) : DEF_CONTOUR_RATIO;
     return d->makeHighEnergyImage(detailRatio);
 }
 
@@ -330,7 +330,7 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
     BENCHMARK_STOP();
 }
 
-QImage DtwImagePrivate::makeHighEnergyImage(int ratio) const
+QImage DtwImagePrivate::makeHighEnergyImage(float ratio) const
 {
     BENCHMARK_START();
     const energy_t threshold = getThresholdEnergy(ratio);
@@ -418,7 +418,7 @@ QImage DtwImage::dumpImage() const {
 
 #endif
 
-energy_t DtwImagePrivate::getThresholdEnergy(int ratio) const {
+energy_t DtwImagePrivate::getThresholdEnergy(float ratio) const {
     //create a sorted array
     if (!cache.isUpToDate) {
         cache.sortedEnergies.clear();
