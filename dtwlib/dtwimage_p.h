@@ -113,6 +113,14 @@ public:
 
 };
 
+struct Cache {
+    bool isUpToDate;
+    QList<energy_t> sortedEnergies;
+
+    Cache() : isUpToDate(false) {}
+    void invalidate() { isUpToDate = false; }
+};
+
 public:
     DtwImage * q_ptr;
     Q_DECLARE_PUBLIC(DtwImage)
@@ -122,6 +130,8 @@ public:
     QVector<QRgb> colors;
     QVector<Cell> cells;
     index_t startingCell;
+
+    mutable Cache cache;
 
     DtwImagePrivate(DtwImage *q, QImage img);
     DtwImagePrivate(DtwImage *q, const DtwImagePrivate * r);
@@ -134,8 +144,8 @@ public:
     Seam findHorizontalSeam() const;
     Seam findSeamHelper(SeamLayer&& firstLayer, const Neighbour dir, int length) const;
 
-    QList<Seam> findAllCountours( int minLength = 0, energy_t minEnergy = 0.0 );
-    QPair<Seam, energy_t>  findContour(index_t start, int minLength = 3);
+    QList<Seam> findAllCountours( int minLength = 0, energy_t minEnergy = 0.0 ) const;
+    QPair<Seam, energy_t>  findContour(index_t start, int minLength = 3) const;
 
 #ifdef QT_DEBUG
     void drawSeams();
@@ -148,11 +158,14 @@ public:
 
     void resize(const QSize& size);
 
+private:
+
     energy_t energy(int x, int y) const;
     void updateEnergy(index_t idx);
     energy_t getThresholdEnergy(int ratio) const;
 
-    energy_t dualGradientEnergy(int left, int rigth, int up, int down);
+    energy_t dualGradientEnergy(int left, int rigth, int up, int down) const;
+
 };//struct DtwImagePrivate
 
 }//namespace dtw

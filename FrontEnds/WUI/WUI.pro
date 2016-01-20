@@ -30,3 +30,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui
+
+include(../../DyeTheWorld.pri)
+
+message(RESOURSES(WUI): $$RESOURCES)

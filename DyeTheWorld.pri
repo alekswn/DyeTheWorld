@@ -34,10 +34,10 @@ isEmpty(DESTDIR) {
     debug:   DESTDIR = $$BUILD_ROOT/debug
 }
 
-OBJECTS_DIR = $$DESTDIR/.obj
-MOC_DIR = $$DESTDIR/.moc
-RCC_DIR = $$DESTDIR/.qrc
-UI_DIR = $$DESTDIR/.ui
+#OBJECTS_DIR = $$DESTDIR/.obj
+#MOC_DIR = $$DESTDIR/.moc
+#RCC_DIR = $$DESTDIR/.qrc
+#UI_DIR = $$DESTDIR/.ui
 
 DIRS_TO_CREATE =  \
         $$DESTDIR \

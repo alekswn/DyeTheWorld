@@ -53,62 +53,56 @@
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="QRadioButton" name="originalButton">
+    <widget class="QWidget" name="verticalLayoutWidget_3">
      <property name="geometry">
       <rect>
-       <x>0</x>
-       <y>10</y>
-       <width>108</width>
-       <height>21</height>
+       <x>1</x>
+       <y>1</y>
+       <width>131</width>
+       <height>111</height>
       </rect>
      </property>
-     <property name="text">
-      <string>Original</string>
-     </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-     <attribute name="buttonGroup">
-      <string notr="true">buttonGroup</string>
-     </attribute>
-    </widget>
-    <widget class="QRadioButton" name="energyButton">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>30</y>
-       <width>108</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Energy</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-     <attribute name="buttonGroup">
-      <string notr="true">buttonGroup</string>
-     </attribute>
-    </widget>
-    <widget class="QRadioButton" name="radioButton_3">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>50</y>
-       <width>121</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Coloring Page</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-     <attribute name="buttonGroup">
-      <string notr="true">buttonGroup</string>
-     </attribute>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QRadioButton" name="originalButton">
+        <property name="text">
+         <string>Original</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">buttonGroup</string>
+        </attribute>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="coloringPageButton">
+        <property name="text">
+         <string>Coloring Page</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">buttonGroup</string>
+        </attribute>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="energyButton">
+        <property name="text">
+         <string>Energy</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <attribute name="buttonGroup">
+         <string notr="true">buttonGroup</string>
+        </attribute>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </widget>
    <widget class="QSlider" name="zoomSlider">
@@ -120,8 +114,23 @@
       <height>91</height>
      </rect>
     </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <number>200</number>
+    </property>
+    <property name="value">
+     <number>100</number>
+    </property>
     <property name="orientation">
      <enum>Qt::Vertical</enum>
+    </property>
+    <property name="tickPosition">
+     <enum>QSlider::TicksBothSides</enum>
+    </property>
+    <property name="tickInterval">
+     <number>50</number>
     </property>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget">
@@ -150,6 +159,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="resizeButton">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Resize</string>
        </property>
@@ -175,7 +187,17 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="ZoomSpinBox"/>
+      <widget class="QSpinBox" name="zoomSpinBox">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>200</number>
+       </property>
+       <property name="value">
+        <number>100</number>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -185,14 +207,29 @@
       <x>420</x>
       <y>260</y>
       <width>131</width>
-      <height>51</height>
+      <height>61</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
      <item>
       <widget class="QSlider" name="detailsSlider">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>51</number>
+       </property>
+       <property name="value">
+        <number>5</number>
+       </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksBothSides</enum>
+       </property>
+       <property name="tickInterval">
+        <number>10</number>
        </property>
       </widget>
      </item>
@@ -206,7 +243,17 @@
         </widget>
        </item>
        <item>
-        <widget class="QDoubleSpinBox" name="energySpinBox"/>
+        <widget class="QSpinBox" name="detailsSpinBox">
+         <property name="suffix">
+          <string notr="true" comment="d" extracomment="d"/>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
+         <property name="value">
+          <number>5</number>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -233,7 +280,7 @@
        <height>309</height>
       </rect>
      </property>
-     <widget class="QLabel" name="label_3">
+     <widget class="QLabel" name="imageLabel">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -277,7 +324,140 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>originalButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>displayModeToggled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>473</x>
+     <y>193</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>77</x>
+     <y>350</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>energyButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>displayModeToggled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>453</x>
+     <y>263</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>94</x>
+     <y>355</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>coloringPageButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>displayModeToggled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>508</x>
+     <y>232</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>526</x>
+     <y>289</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>detailsSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>detailsSpinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>494</x>
+     <y>305</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>503</x>
+     <y>331</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>detailsSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>detailsSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>525</x>
+     <y>348</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>516</x>
+     <y>317</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>zoomSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>zoomSpinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>540</x>
+     <y>100</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>534</x>
+     <y>154</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>zoomSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>zoomSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>512</x>
+     <y>144</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>538</x>
+     <y>125</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>detailsSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>onDetailRatioChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>527</x>
+     <y>338</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>485</x>
+     <y>349</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>displayModeToggled(bool)</slot>
+  <slot>onDetailRatioChanged(int)</slot>
+ </slots>
  <buttongroups>
   <buttongroup name="buttonGroup"/>
  </buttongroups>

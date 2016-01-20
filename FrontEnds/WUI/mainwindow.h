@@ -20,10 +20,14 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QImage>
+#include "dtwimage.h"
+
 
 namespace Ui {
 class MainWindow;
 }
+
 
 class MainWindow : public QMainWindow
 {
@@ -33,8 +37,24 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    void loadImage(const QImage& image);
+
+public slots:
+    void displayModeToggled(bool checked);
+    void onDetailRatioChanged(int);
+
+
+
 private:
     Ui::MainWindow *ui;
+
+    QImage originalImage;
+    QImage displayedImage;
+
+    dtw::DtwImage *dtwImage;
+
+    void displayImage(const QImage& image);
+
 };
 
 #endif // MAINWINDOW_H

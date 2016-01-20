@@ -79,10 +79,11 @@ QImage DtwImage::resize(const QSize& size) const
     return tp.d_ptr->makeImage();
 }
 
-QImage DtwImage::makeColoringPage(int detailRatio) const
+QImage DtwImage::makeColoringPage(int detailPercent) const
 {
     Q_D(const DtwImage);
-    if (detailRatio <= 0) detailRatio = DEF_CONTOUR_RATIO;
+    int detailRatio = (detailPercent > 0 && detailPercent <= 100)
+                    ? (100 / detailPercent) : DEF_CONTOUR_RATIO;
     return d->makeHighEnergyImage(detailRatio);
 }
 
@@ -95,7 +96,7 @@ DtwImagePrivate::Cell::Cell()
     : neighbours(), energy(BORDER_ENERGY)
 {}
 
-energy_t DtwImagePrivate::dualGradientEnergy(int left, int right, int up, int down) {
+energy_t DtwImagePrivate::dualGradientEnergy(int left, int right, int up, int down) const {
 
     const QRgb pX = colors[left];
     const QRgb sX = colors[right];
@@ -331,7 +332,10 @@ DtwImagePrivate::DtwImagePrivate(DtwImage *q, QImage img)
 
 QImage DtwImagePrivate::makeHighEnergyImage(int ratio) const
 {
+    BENCHMARK_START();
     const energy_t threshold = getThresholdEnergy(ratio);
+    BENCHMARK_STOP();
+    BENCHMARK_START();
     QImage energyImage = QImage(size, QImage::Format_Grayscale8);
     const int width =  size.width() - 1;
     const int height = size.height() - 1;
@@ -341,6 +345,7 @@ QImage DtwImagePrivate::makeHighEnergyImage(int ratio) const
             line[i] = (energy(i,j) > threshold) ? 0 : 255;
         }
     }
+    BENCHMARK_STOP();
     return energyImage;
 }
 
@@ -415,12 +420,15 @@ QImage DtwImage::dumpImage() const {
 
 energy_t DtwImagePrivate::getThresholdEnergy(int ratio) const {
     //create a sorted array
-    QList<energy_t> energies;
-    energies.reserve(NM);
-    foreach(const Cell& cell, cells)
-        energies.append(cell.energy);
-    qSort(energies);
-    energy_t threshold = energies[NM - NM/ratio];
+    if (!cache.isUpToDate) {
+        cache.sortedEnergies.clear();
+        cache.sortedEnergies.reserve(NM);
+        foreach(const Cell& cell, cells)
+            cache.sortedEnergies.append(cell.energy);
+        qSort(cache.sortedEnergies);
+        cache.isUpToDate = true;
+    }
+    energy_t threshold = cache.sortedEnergies[NM - NM/ratio];
 #ifdef QT_DEBUG
     qDebug() << "Threshold energy:" << threshold;
 #endif
@@ -553,6 +561,7 @@ QImage DtwImage::dumpSeams() const {
 }
 
 void DtwImagePrivate::drawSeams() {
+    cache.invalidate();
     Seam vSeam = findVerticalSeam();
     Seam hSeam = findHorizontalSeam();
     foreach (index_t idx, vSeam) {
@@ -565,6 +574,7 @@ void DtwImagePrivate::drawSeams() {
 }
 
 void DtwImagePrivate::drawTopContour() {
+    cache.invalidate();
     QPair<Seam, energy_t> contour = findContour(startingCell);
     qInfo() << __PRETTY_FUNCTION__ << " : The top contour has energy " << contour.second;
     foreach (index_t idx, contour.first) {
@@ -582,6 +592,7 @@ QImage DtwImage::dumpTopContour() const {
 #endif
 
 void DtwImagePrivate::removeHorizontalSeam(const Seam& seam) {
+    cache.invalidate();
 #ifdef DIAGONAL_NEIGHBOURS
 #error "removeSeam() unable to handle diagonal neighbours"
 #endif
@@ -616,6 +627,7 @@ void DtwImagePrivate::removeHorizontalSeam(const Seam& seam) {
 }
 
 void DtwImagePrivate::removeVerticalSeam(const Seam& seam) {
+    cache.invalidate();
 #ifdef DIAGONAL_NEIGHBOURS
 #error "removeSeam() unable to handle diagonal neighbours"
 #endif
@@ -664,6 +676,7 @@ void DtwImagePrivate::removeVerticalSeam(const Seam& seam) {
 }
 
 void DtwImagePrivate::resize(const QSize& newSize) {
+    cache.invalidate();
     const QSize deltaSize = newSize - size;
     int dh = deltaSize.height();
     int dw = deltaSize.width();
@@ -683,7 +696,7 @@ void DtwImagePrivate::resize(const QSize& newSize) {
 
 ////////////////////////////  Contour operations //////////////////////////////
 
-QPair<Seam, energy_t> DtwImagePrivate::findContour(index_t start, int minLength) {
+QPair<Seam, energy_t> DtwImagePrivate::findContour(index_t start, int minLength) const {
     Q_ASSERT(start > INVALID_INDEX && minLength > 1);
     BENCHMARK_START();
 

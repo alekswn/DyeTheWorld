@@ -19,14 +19,66 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QMessageBox>
+#include <QtDebug>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    originalImage(QImage()),
+    dtwImage(nullptr)
 {
     ui->setupUi(this);
+
+    ui->imageLabel->setScaledContents(true);
+
+#ifdef QT_DEBUG
+    loadImage(QImage(":/testImage.jpg"));
+#else
+    ui->energyButton->setHidden(true);
+#endif
+
+
 }
+
+void MainWindow::loadImage(const QImage &image)
+{
+    originalImage = image;
+    dtwImage = new dtw::DtwImage(image);
+    displayModeToggled(true);
+}
+
+void MainWindow::displayImage(const QImage &image)
+{
+    displayedImage = image;
+    ui->imageLabel->setPixmap(QPixmap::fromImage(image));
+    ui->imageLabel->show();
+}
+
+void MainWindow::displayModeToggled(bool checked)
+{
+    if(!checked) return;
+
+    if (ui->originalButton->isChecked())
+        displayImage(originalImage);
+    else if (ui->coloringPageButton->isChecked())
+        displayImage(dtwImage->makeColoringPage(ui->detailsSpinBox->value()));
+#ifdef QT_DEBUG
+    else if (ui->energyButton->isChecked())
+        displayImage(dtwImage->dumpEnergy());
+#endif
+}
+
+void MainWindow::onDetailRatioChanged(int newPercent)
+{
+    if (ui->coloringPageButton->isChecked())
+        displayImage(dtwImage->makeColoringPage(newPercent));
+}
+
 
 MainWindow::~MainWindow()
 {
+    delete dtwImage;
     delete ui;
 }
+

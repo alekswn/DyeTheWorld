@@ -28,6 +28,6 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
 
-HEADERS += \
+HEADERS +=
 
 include(../../DyeTheWorld.pri)
