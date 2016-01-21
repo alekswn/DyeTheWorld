@@ -74,8 +74,8 @@ void MainWindow::loadImage(const QImage &image)
 void MainWindow::displayPixmap(const QPixmap &pixmap)
 {
     if (scaleFactor == 0.0) {
-        const int wScale = imageLabel->size().width()*100 / pixmap.size().width();
-        const int hScale = imageLabel->size().height()*100 / pixmap.size().height();
+        const int wScale = ui->scrollArea->size().width()*100 / pixmap.size().width();
+        const int hScale = ui->scrollArea->size().height()*100 / pixmap.size().height();
         const int scale = qMin(wScale,hScale);
         ui->zoomSpinBox->setValue(scale);
         ui->zoomSpinBox->setMinimum(scale);
@@ -135,7 +135,7 @@ void MainWindow::on_loadButton_clicked()
     QFileDialog dialog(this, tr("Open File"),
                        picturesLocations.isEmpty() ? QDir::currentPath() : picturesLocations.last());
     dialog.setAcceptMode(QFileDialog::AcceptOpen);
-    dialog.setMimeTypeFilters(mimeTypeFilters);
+//    dialog.setMimeTypeFilters(mimeTypeFilters);
     dialog.selectMimeTypeFilter("image/jpeg");
 
     while (dialog.exec() == QDialog::Accepted && !loadFile(dialog.selectedFiles().first())) {}
