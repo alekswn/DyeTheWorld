@@ -21,6 +21,9 @@
 
 #include <QMainWindow>
 #include <QImage>
+#include <QLabel>
+#include <QString>
+
 #include "dtwimage.h"
 
 
@@ -42,18 +45,29 @@ public:
 public slots:
     void displayModeToggled(bool checked);
     void onDetailRatioChanged(int);
+    void onZoomChanged(int);
 
+private slots:
+    void on_loadButton_clicked();
 
+    void on_printButton_clicked();
+
+    void on_saveButton_clicked();
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow *ui;    
+    QLabel * imageLabel;
 
-    QImage originalImage;
-    QImage displayedImage;
+    QPixmap originalPixmap;
+    QPixmap displayedPixmap;
 
     dtw::DtwImage *dtwImage;
 
-    void displayImage(const QImage& image);
+    double scaleFactor;
+
+    void displayPixmap(const QPixmap& image);
+    bool loadFile(const QString &fileName);
+    bool saveFile(const QString &fileName);
 
 };
 
